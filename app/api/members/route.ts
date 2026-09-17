@@ -13,22 +13,36 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  // Verify the household belongs to this user
-  const { data: household } = await supabase
-    .from("households")
-    .select("id")
-    .eq("id", parsed.data.household_id)
-    .eq("owner_user_id", user.id)
-    .single();
+  // Resolve household: either verified by parsed.data.household_id or lookup from owner
+  let householdId = parsed.data.household_id;
+  if (householdId) {
+    const { data: household } = await supabase
+      .from("households")
+      .select("id")
+      .eq("id", householdId)
+      .eq("owner_user_id", user.id)
+      .single();
 
-  if (!household) {
-    return NextResponse.json({ error: "Household not found or access denied" }, { status: 403 });
+    if (!household) {
+      return NextResponse.json({ error: "Household not found or access denied" }, { status: 403 });
+    }
+  } else {
+    const { data: household } = await supabase
+      .from("households")
+      .select("id")
+      .eq("owner_user_id", user.id)
+      .single();
+
+    if (!household) {
+      return NextResponse.json({ error: "Household not found" }, { status: 404 });
+    }
+    householdId = household.id;
   }
 
   const { data, error } = await supabase
     .from("family_members")
     .insert({
-      household_id:   parsed.data.household_id,
+      household_id:   householdId,
       full_name:      parsed.data.full_name,
       relation:       parsed.data.relation,
       is_minor:       parsed.data.is_minor,
@@ -41,13 +55,11 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // If it's an adult (not minor), log a guardian/self consent entry
-  if (!parsed.data.is_minor) {
-    await supabase.from("consents").insert({
-      family_member_id: data.id,
-      consent_type: "self",
-    });
-  }
+  // Record consent: guardian for minors, self for adults
+  await supabase.from("consents").insert({
+    family_member_id: data.id,
+    consent_type: parsed.data.is_minor ? "guardian" : "self",
+  });
 
   // Audit log
   await supabase.from("audit_log").insert({

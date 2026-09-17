@@ -73,18 +73,18 @@ export default function BookAppointmentPage() {
   }, {});
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4">
+    <div className="min-h-screen bg-background p-4">
       <div className="max-w-lg mx-auto space-y-6">
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
-          <h1 className="text-xl font-semibold text-slate-900">Choisir un créneau</h1>
-          <p className="text-slate-500 text-sm mt-1">
+        <div className="bg-card rounded-2xl border border-border shadow-soft p-6">
+          <h1 className="text-xl">Choisir un créneau</h1>
+          <p className="text-muted-foreground text-sm mt-1">
             Sélectionnez une date et heure pour votre test de confirmation à la pharmacie partenaire.
           </p>
         </div>
 
         {Object.entries(byDay).map(([day, daySlots]) => (
-          <div key={day} className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
-            <p className="text-sm font-medium text-slate-700 capitalize">{day}</p>
+          <div key={day} className="bg-card rounded-xl border border-border p-4 space-y-3">
+            <p className="text-sm font-medium text-foreground capitalize">{day}</p>
             <div className="flex flex-wrap gap-2">
               {daySlots.map(slot => (
                 <button
@@ -92,8 +92,8 @@ export default function BookAppointmentPage() {
                   onClick={() => setSelected(slot)}
                   className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
                     selected?.toISOString() === slot.toISOString()
-                      ? "bg-slate-800 text-white border-slate-800"
-                      : "border-slate-300 text-slate-700 hover:bg-slate-50"
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "border-border text-foreground hover:bg-muted"
                   }`}
                 >
                   {slot.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
@@ -103,12 +103,12 @@ export default function BookAppointmentPage() {
           </div>
         ))}
 
-        {error && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-4 py-3">{error}</p>}
+        {error && <p className="text-sm text-destructive bg-destructive/10 rounded-lg px-4 py-3">{error}</p>}
 
         <button
           onClick={handleBook}
           disabled={!selected || loading}
-          className="w-full rounded-lg bg-slate-800 text-white py-3 text-sm font-medium hover:bg-slate-700 disabled:opacity-40 transition-colors"
+          className="w-full rounded-lg bg-primary text-primary-foreground py-3 text-sm font-medium hover:bg-primary/80 disabled:opacity-40 transition-colors"
         >
           {loading ? "Réservation…" : selected
             ? `Confirmer — ${selected.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} à ${selected.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`

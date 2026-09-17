@@ -53,32 +53,32 @@ export default function AcceptForm({ householdName }: { householdName: string })
       </div>
 
       <div className="space-y-1">
-        <label className="text-sm font-medium text-slate-700">Nom complet</label>
+        <label className="text-sm font-medium text-foreground">Nom complet</label>
         <input
           required
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500"
+          className="w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/50"
         />
       </div>
 
       <div className="space-y-1">
-        <label className="text-sm font-medium text-slate-700">Date de naissance</label>
+        <label className="text-sm font-medium text-foreground">Date de naissance</label>
         <input
           type="date"
           required
           value={dob}
           onChange={(e) => setDob(e.target.value)}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500"
+          className="w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/50"
         />
       </div>
 
       <div className="space-y-1">
-        <label className="text-sm font-medium text-slate-700">Sexe biologique (optionnel)</label>
+        <label className="text-sm font-medium text-foreground">Sexe biologique (optionnel)</label>
         <select
           value={sex}
           onChange={(e) => setSex(e.target.value)}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500"
+          className="w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/50"
         >
           <option value="">Sélectionner…</option>
           {SEX_OPTIONS.map((s) => (
@@ -87,24 +87,24 @@ export default function AcceptForm({ householdName }: { householdName: string })
         </select>
       </div>
 
-      <label className="flex items-start gap-2 text-sm text-slate-700">
+      <label className="flex items-start gap-2 text-sm text-foreground">
         <input
           type="checkbox"
           required
           checked={consented}
           onChange={(e) => setConsented(e.target.checked)}
-          className="mt-0.5"
+          className="mt-0.5 accent-[var(--color-primary)]"
         />
         Je consens à la collecte de mes propres données de dépistage dans le
         cadre de ce foyer.
       </label>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
 
       <button
         type="submit"
         disabled={loading || !consented}
-        className="w-full rounded-lg bg-slate-800 text-white py-2 text-sm font-medium hover:bg-slate-700 disabled:opacity-50 transition-colors"
+        className="w-full rounded-lg bg-primary text-primary-foreground py-2 text-sm font-medium hover:bg-primary/80 disabled:opacity-50 transition-colors"
       >
         {loading ? "Confirmation…" : "Confirmer et rejoindre"}
       </button>

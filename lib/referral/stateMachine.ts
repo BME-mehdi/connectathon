@@ -44,8 +44,12 @@ export function canTransition(
     };
   }
 
+  // NOTE: actorRole may be undefined (no role claim on the session) — that
+  // must NOT bypass the check. A missing role is treated the same as an
+  // unauthorized one, otherwise any authenticated user without a role claim
+  // could reach a role-gated status (e.g. physician_confirmed).
   const requiredRoles = TRANSITION_ROLES[to];
-  if (requiredRoles && actorRole && !requiredRoles.includes(actorRole)) {
+  if (requiredRoles && !requiredRoles.includes(actorRole ?? "")) {
     return {
       allowed: false,
       reason: `Only roles [${requiredRoles.join(", ")}] may set status '${to}'.`,

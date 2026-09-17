@@ -59,11 +59,11 @@ export default function AddMinorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="max-w-lg w-full bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-6">
+    <div className="min-h-screen bg-hero-wash flex items-center justify-center p-4">
+      <div className="max-w-lg w-full bg-card rounded-2xl shadow-soft border border-border p-8 space-y-6">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">Ajouter un enfant mineur</h1>
-          <p className="text-slate-500 text-sm mt-1">
+          <h1 className="text-xl">Ajouter un enfant mineur</h1>
+          <p className="text-muted-foreground text-sm mt-1">
             Aucune donnée de santé personnelle n&apos;est collectée pour un
             mineur — uniquement son identité, à titre informatif pour le
             foyer.
@@ -78,22 +78,22 @@ export default function AddMinorPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
-            <label className="text-sm font-medium text-slate-700">Nom complet</label>
+            <label className="text-sm font-medium text-foreground">Nom complet</label>
             <input
               required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500"
+              className="w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/50"
             />
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium text-slate-700">Lien de parenté</label>
+            <label className="text-sm font-medium text-foreground">Lien de parenté</label>
             <select
               required
               value={relation}
               onChange={(e) => setRelation(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500"
+              className="w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/50"
             >
               <option value="">Sélectionner…</option>
               {MINOR_RELATIONS.map((r) => (
@@ -103,22 +103,22 @@ export default function AddMinorPage() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium text-slate-700">Date de naissance</label>
+            <label className="text-sm font-medium text-foreground">Date de naissance</label>
             <input
               type="date"
               required
               value={dob}
               onChange={(e) => setDob(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500"
+              className="w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/50"
             />
           </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-slate-800 text-white py-2 text-sm font-medium hover:bg-slate-700 disabled:opacity-50 transition-colors"
+            className="w-full rounded-lg bg-primary text-primary-foreground py-2 text-sm font-medium hover:bg-primary/80 disabled:opacity-50 transition-colors"
           >
             {loading ? "Ajout…" : "Ajouter l'enfant"}
           </button>

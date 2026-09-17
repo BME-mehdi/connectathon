@@ -1,7 +1,3 @@
-// n8n Referral Workflow — T2D Screening Platform
-// Triggered by the Scoring Workflow when tier === 'high'
-// Webhook path: POST /webhook/referral-trigger
-// Expected body: { family_member_id: string, risk_score_id: string }
 {
   "name": "T2D: Referral Workflow",
   "nodes": [
@@ -16,8 +12,13 @@
     {
       "parameters": {
         "url": "={{ $env.SUPABASE_URL }}/rest/v1/family_members?id=eq.{{ $json.family_member_id }}&select=*,households(region)",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "httpHeaderAuth"
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" }
+          ]
+        }
       },
       "id": "fetch-member",
       "name": "Fetch Member & Region",
@@ -28,8 +29,13 @@
     {
       "parameters": {
         "url": "={{ $env.SUPABASE_URL }}/rest/v1/partner_pharmacies?region=eq.{{ $json[0].households.region }}&is_active=eq.true&limit=1",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "httpHeaderAuth"
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" }
+          ]
+        }
       },
       "id": "find-pharmacy",
       "name": "Find Nearest Pharmacy",
@@ -41,8 +47,14 @@
       "parameters": {
         "url": "={{ $env.SUPABASE_URL }}/rest/v1/referrals",
         "method": "POST",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Prefer", "value": "return=representation" }
+          ]
+        },
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
@@ -88,5 +100,5 @@
   },
   "active": true,
   "settings": { "executionOrder": "v1" },
-  "tags": ["t2d-screening", "referral"]
+  "tags": []
 }

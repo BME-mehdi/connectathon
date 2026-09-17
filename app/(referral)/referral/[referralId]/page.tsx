@@ -9,7 +9,7 @@ interface Props {
 const STATUS_LABELS: Record<string, { fr: string; color: string }> = {
   flagged:             { fr: "En attente de rendez-vous",  color: "bg-amber-100 text-amber-800" },
   scheduled:           { fr: "Rendez-vous planifié",       color: "bg-blue-100 text-blue-800" },
-  completed:           { fr: "Test réalisé",               color: "bg-slate-100 text-slate-700" },
+  completed:           { fr: "Test réalisé",               color: "bg-muted text-muted-foreground" },
   no_show:             { fr: "Absent au rendez-vous",      color: "bg-rose-100 text-rose-800" },
   physician_confirmed: { fr: "Confirmé par le pharmacien", color: "bg-emerald-100 text-emerald-800" },
 };
@@ -34,21 +34,21 @@ export default async function ReferralDetailPage({ params }: Props) {
 
   if (!referral) redirect("/referral");
 
-  const status = STATUS_LABELS[referral.status] ?? { fr: referral.status, color: "bg-slate-100 text-slate-700" };
+  const status = STATUS_LABELS[referral.status] ?? { fr: referral.status, color: "bg-muted text-muted-foreground" };
   const pharmacy = referral.partner_pharmacies as any;
   const member   = referral.family_members as any;
   const score    = referral.risk_scores as any;
   const appointment = (referral.appointments as any[])?.[0];
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4">
+    <div className="min-h-screen bg-background p-4">
       <div className="max-w-lg mx-auto space-y-4">
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
+        <div className="bg-card rounded-2xl border border-border shadow-soft p-6 space-y-4">
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-xl font-semibold text-slate-900">Orientation médicale</h1>
-              <p className="text-slate-500 text-sm">{member?.full_name}</p>
+              <h1 className="text-xl">Orientation médicale</h1>
+              <p className="text-muted-foreground text-sm">{member?.full_name}</p>
             </div>
             <span className={`text-xs font-medium px-2 py-1 rounded-full ${status.color}`}>
               {status.fr}
@@ -56,10 +56,10 @@ export default async function ReferralDetailPage({ params }: Props) {
           </div>
 
           {score && (
-            <div className="bg-slate-50 rounded-xl px-4 py-3 space-y-1">
-              <p className="text-xs text-slate-500">Score DIABSCORE</p>
-              <p className="text-2xl font-bold text-slate-900">{Math.round(score.score_value)}</p>
-              <p className="text-xs text-slate-400">
+            <div className="bg-muted rounded-xl px-4 py-3 space-y-1">
+              <p className="text-xs text-muted-foreground">Score DIABSCORE</p>
+              <p className="text-2xl font-heading font-bold text-primary">{Math.round(score.score_value)}</p>
+              <p className="text-xs text-muted-foreground/70">
                 Formule {score.formula_version} · {new Date(score.computed_at).toLocaleDateString("fr-FR")}
               </p>
             </div>
@@ -67,17 +67,17 @@ export default async function ReferralDetailPage({ params }: Props) {
 
           {pharmacy && (
             <div className="space-y-1">
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Pharmacie partenaire</p>
-              <p className="text-sm font-medium text-slate-800">{pharmacy.name}</p>
-              <p className="text-xs text-slate-500">{pharmacy.address}</p>
-              <p className="text-xs text-slate-500">{pharmacy.phone}</p>
+              <p className="label-caps text-muted-foreground">Pharmacie partenaire</p>
+              <p className="text-sm font-medium text-foreground">{pharmacy.name}</p>
+              <p className="text-xs text-muted-foreground">{pharmacy.address}</p>
+              <p className="text-xs text-muted-foreground">{pharmacy.phone}</p>
             </div>
           )}
 
           {appointment ? (
             <div className="space-y-1">
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Rendez-vous</p>
-              <p className="text-sm text-slate-800">
+              <p className="label-caps text-muted-foreground">Rendez-vous</p>
+              <p className="text-sm text-foreground">
                 {new Date(appointment.scheduled_at).toLocaleDateString("fr-FR", {
                   weekday: "long", day: "numeric", month: "long", year: "numeric",
                 })}
@@ -92,7 +92,7 @@ export default async function ReferralDetailPage({ params }: Props) {
             referral.status === "flagged" && (
               <Link
                 href={`/referral/${referralId}/book`}
-                className="block text-center rounded-lg bg-slate-800 text-white py-2 text-sm font-medium hover:bg-slate-700 transition-colors"
+                className="block text-center rounded-lg bg-primary text-primary-foreground py-2 text-sm font-medium hover:bg-primary/80 transition-colors"
               >
                 Choisir un créneau →
               </Link>
@@ -107,7 +107,7 @@ export default async function ReferralDetailPage({ params }: Props) {
           </p>
         </div>
 
-        <Link href="/referral" className="block text-center text-slate-500 text-sm underline">
+        <Link href="/referral" className="block text-center text-muted-foreground text-sm underline">
           ← Retour aux orientations
         </Link>
       </div>

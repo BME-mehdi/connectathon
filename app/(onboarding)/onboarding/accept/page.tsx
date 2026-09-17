@@ -26,11 +26,11 @@ export default async function AcceptInvitePage() {
   if (existingMember) redirect("/screening");
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="max-w-lg w-full bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-6">
+    <div className="min-h-screen bg-hero-wash flex items-center justify-center p-4">
+      <div className="max-w-lg w-full bg-card rounded-2xl shadow-soft border border-border p-8 space-y-6">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">Rejoindre le foyer</h1>
-          <p className="text-slate-500 text-sm mt-1">
+          <h1 className="text-xl">Rejoindre le foyer</h1>
+          <p className="text-muted-foreground text-sm mt-1">
             Confirmez vos informations pour participer au dépistage.
           </p>
         </div>

@@ -28,12 +28,17 @@ export async function updateSession(request: NextRequest) {
   // Refresh session on every request
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Protect all routes except auth pages and public assets
+  // Protect page routes except auth pages and public assets. API routes are
+  // deliberately excluded — they are also called by trusted server-to-server
+  // callers (n8n) with no Supabase session cookie, and every route handler
+  // already enforces its own auth (getUser()/role/secret checks). Redirecting
+  // those requests to the login HTML page here would silently break them.
   const isAuthRoute = request.nextUrl.pathname.startsWith("/auth");
+  const isApiRoute = request.nextUrl.pathname.startsWith("/api");
   const isPublicAsset = request.nextUrl.pathname.startsWith("/_next") ||
     request.nextUrl.pathname.startsWith("/favicon");
 
-  if (!user && !isAuthRoute && !isPublicAsset) {
+  if (!user && !isAuthRoute && !isApiRoute && !isPublicAsset) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
     return NextResponse.redirect(url);

@@ -38,12 +38,12 @@ export default function InviteAdultPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="max-w-lg w-full bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-6">
+    <div className="min-h-screen bg-hero-wash flex items-center justify-center p-4">
+      <div className="max-w-lg w-full bg-card rounded-2xl shadow-soft border border-border p-8 space-y-6">
         {sent ? (
           <div className="space-y-4 text-center">
-            <h1 className="text-xl font-semibold text-slate-900">Invitation envoyée</h1>
-            <p className="text-slate-500 text-sm">
+            <h1 className="text-xl">Invitation envoyée</h1>
+            <p className="text-muted-foreground text-sm">
               Un lien de connexion a été envoyé à <strong>{email}</strong>. La
               personne invitée devra créer son propre compte et donner son
               consentement avant que ses données ne soient enregistrées —
@@ -51,7 +51,7 @@ export default function InviteAdultPage() {
             </p>
             <Link
               href="/onboarding/members"
-              className="inline-block text-sm font-medium text-slate-700 underline underline-offset-2"
+              className="inline-block text-sm font-medium text-primary underline underline-offset-2"
             >
               ← Retour aux membres
             </Link>
@@ -59,8 +59,8 @@ export default function InviteAdultPage() {
         ) : (
           <>
             <div>
-              <h1 className="text-xl font-semibold text-slate-900">Inviter un adulte</h1>
-              <p className="text-slate-500 text-sm mt-1">
+              <h1 className="text-xl">Inviter un adulte</h1>
+              <p className="text-muted-foreground text-sm mt-1">
                 Chaque adulte confirme lui-même son compte et son consentement
                 avant que ses propres informations ne soient saisies.
               </p>
@@ -68,24 +68,24 @@ export default function InviteAdultPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-sm font-medium text-slate-700">Email</label>
+                <label className="text-sm font-medium text-foreground">Email</label>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500"
+                  className="w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/50"
                   placeholder="conjoint@exemple.com"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm font-medium text-slate-700">Lien de parenté</label>
+                <label className="text-sm font-medium text-foreground">Lien de parenté</label>
                 <select
                   required
                   value={relation}
                   onChange={(e) => setRelation(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500"
+                  className="w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/50"
                 >
                   <option value="">Sélectionner…</option>
                   {RELATIONS.map((r) => (
@@ -94,12 +94,12 @@ export default function InviteAdultPage() {
                 </select>
               </div>
 
-              {error && <p className="text-sm text-red-600">{error}</p>}
+              {error && <p className="text-sm text-destructive">{error}</p>}
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-lg bg-slate-800 text-white py-2 text-sm font-medium hover:bg-slate-700 disabled:opacity-50 transition-colors"
+                className="w-full rounded-lg bg-primary text-primary-foreground py-2 text-sm font-medium hover:bg-primary/80 disabled:opacity-50 transition-colors"
               >
                 {loading ? "Envoi…" : "Envoyer l'invitation"}
               </button>

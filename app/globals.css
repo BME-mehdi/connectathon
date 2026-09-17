@@ -8,8 +8,8 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --font-heading: var(--font-heading);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -46,75 +46,93 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Brand tokens, exposed as Tailwind utilities (bg-brand-*, text-brand-*, from-brand-*…) */
+  --color-brand-primary: var(--color-primary);
+  --color-brand-secondary: var(--color-secondary);
+  --color-brand-accent: var(--color-accent);
+  --color-brand-surface: var(--color-surface-light);
+  --color-brand-ink: var(--color-ink-dark);
+
+  --shadow-soft: 0 2px 8px rgba(65, 48, 116, 0.06);
+  --shadow-glow: 0 0 32px rgba(15, 183, 184, 0.35);
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  /* Brand palette */
+  --color-primary: #413074;
+  --color-secondary: #736fa1;
+  --color-accent: #0fb7b8;
+  --color-surface-light: #f7f8fa;
+  --color-surface-card: #ffffff;
+  --color-ink-dark: #1a1630;
+
+  --background: var(--color-surface-light);
+  --foreground: var(--color-primary);
+  --card: var(--color-surface-card);
+  --card-foreground: var(--color-primary);
+  --popover: var(--color-surface-card);
+  --popover-foreground: var(--color-primary);
+  --primary: var(--color-primary);
+  --primary-foreground: #ffffff;
+  --secondary: #ecebf5;
+  --secondary-foreground: var(--color-primary);
+  --muted: #eef0f4;
+  --muted-foreground: var(--color-secondary);
+  --accent: #e1fafa;
+  --accent-foreground: #0b6d6e;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --border: #e3e2ef;
+  --input: #e3e2ef;
+  --ring: var(--color-accent);
+  --chart-1: var(--color-primary);
+  --chart-2: var(--color-accent);
+  --chart-3: var(--color-secondary);
+  --chart-4: #7fd8d8;
+  --chart-5: #a89fcc;
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: var(--color-ink-dark);
+  --sidebar-foreground: #f7f8fa;
+  --sidebar-primary: var(--color-accent);
+  --sidebar-primary-foreground: var(--color-ink-dark);
+  --sidebar-accent: #241f45;
+  --sidebar-accent-foreground: #f7f8fa;
+  --sidebar-border: #2c2554;
+  --sidebar-ring: var(--color-accent);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --background: var(--color-ink-dark);
+  --foreground: #f2f1fa;
+  --card: #241f45;
+  --card-foreground: #f2f1fa;
+  --popover: #241f45;
+  --popover-foreground: #f2f1fa;
+  --primary: var(--color-accent);
+  --primary-foreground: var(--color-ink-dark);
+  --secondary: #2c2554;
+  --secondary-foreground: #d9d7ec;
+  --muted: #241f45;
+  --muted-foreground: #a79fcf;
+  --accent: #0fb7b8;
+  --accent-foreground: var(--color-ink-dark);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --ring: var(--color-accent);
+  --chart-1: var(--color-accent);
+  --chart-2: #736fa1;
+  --chart-3: #9d97cc;
+  --chart-4: #5fd0d1;
+  --chart-5: #f2f1fa;
+  --sidebar: var(--color-ink-dark);
+  --sidebar-foreground: #f2f1fa;
+  --sidebar-primary: var(--color-accent);
+  --sidebar-primary-foreground: var(--color-ink-dark);
+  --sidebar-accent: #241f45;
+  --sidebar-accent-foreground: #f2f1fa;
+  --sidebar-border: #2c2554;
+  --sidebar-ring: var(--color-accent);
 }
 
 @layer base {
@@ -126,5 +144,45 @@
   }
   html {
     @apply font-sans;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading font-bold tracking-tight text-primary;
+  }
+}
+
+@layer utilities {
+  /* Uppercase, tracked category label — headings font per design tokens */
+  .label-caps {
+    @apply font-heading text-xs font-bold uppercase tracking-[0.05em];
+  }
+
+  /* Hero banner gradient: linear-gradient(135deg, accent 0%, primary 100%) */
+  .bg-hero-gradient {
+    background-image: linear-gradient(
+      135deg,
+      var(--color-accent) 0%,
+      var(--color-primary) 100%
+    );
+  }
+
+  /* Soft cyan-to-white radial wash for light hero/section backgrounds */
+  .bg-hero-wash {
+    background-image: radial-gradient(
+      circle at top left,
+      color-mix(in srgb, var(--color-accent) 16%, transparent),
+      transparent 60%
+    );
+    background-color: var(--color-surface-light);
+  }
+
+  /* Deep navy/indigo surface for telemetry dashboards, footers, tech modals */
+  .bg-telemetry {
+    background-color: var(--color-ink-dark);
+    color: #f2f1fa;
   }
 }

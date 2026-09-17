@@ -1,6 +1,3 @@
-// n8n Reminder Workflow — T2D Screening Platform
-// Runs daily at 08:00 Africa/Tunis
-// Sends appointment reminders (24h ahead) — stub, wire Twilio/email for production
 {
   "name": "T2D: Daily Reminders",
   "nodes": [
@@ -15,8 +12,13 @@
     {
       "parameters": {
         "url": "={{ $env.SUPABASE_URL }}/rest/v1/appointments?scheduled_at=gt.{{ new Date().toISOString() }}&scheduled_at=lt.{{ new Date(Date.now()+86400000).toISOString() }}&confirmed_by_pharmacist_at=is.null&select=id,scheduled_at,referral_id",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "httpHeaderAuth"
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" }
+          ]
+        }
       },
       "id": "fetch-upcoming",
       "name": "Fetch Upcoming Appointments",
@@ -41,5 +43,5 @@
   },
   "active": true,
   "settings": { "executionOrder": "v1" },
-  "tags": ["t2d-screening", "reminders"]
+  "tags": []
 }

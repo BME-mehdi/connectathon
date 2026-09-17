@@ -1,11 +1,20 @@
 import type { Metadata } from "next";
-import { Inter, Geist } from "next/font/google";
+import { League_Spartan, Amaranth } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import TopNav from "@/components/nav/TopNav";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+const leagueSpartan = League_Spartan({
+  subsets: ["latin"],
+  variable: "--font-heading",
+  weight: ["600", "700", "800"],
+});
 
-const inter = Inter({ subsets: ["latin"] });
+const amaranth = Amaranth({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  weight: ["400", "700"],
+});
 
 export const metadata: Metadata = {
   title: "T2D Family Screening | Connectathon 2026",
@@ -18,8 +27,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" dir="ltr" className={cn("font-sans", geist.variable)}>
-      <body className={inter.className}>
+    <html
+      lang="fr"
+      dir="ltr"
+      className={cn("font-sans", leagueSpartan.variable, amaranth.variable)}
+    >
+      <body className="antialiased">
+        <TopNav />
         {children}
       </body>
     </html>

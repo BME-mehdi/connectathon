@@ -1,11 +1,3 @@
-// n8n Scoring Workflow — T2D Screening Platform
-// Import this file via n8n UI: Settings → Import from File
-// Webhook path: POST /webhook/scoring-trigger
-// Expected body: { screening_response_id: string }
-//
-// IMPORTANT: The JS scoring logic in "Compute DIABSCORE" node MUST stay
-// identical to lib/scoring/diabscore.ts. If the formula changes,
-// increment FORMULA_VERSION in BOTH files.
 {
   "name": "T2D: Scoring Workflow",
   "nodes": [
@@ -20,8 +12,13 @@
     {
       "parameters": {
         "url": "={{ $env.SUPABASE_URL }}/rest/v1/screening_responses?id=eq.{{ $json.screening_response_id }}&select=*",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "httpHeaderAuth"
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" }
+          ]
+        }
       },
       "id": "fetch-screening",
       "name": "Fetch Screening Response",
@@ -43,8 +40,14 @@
       "parameters": {
         "url": "={{ $env.SUPABASE_URL }}/rest/v1/risk_scores",
         "method": "POST",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Prefer", "value": "return=representation" }
+          ]
+        },
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
@@ -111,5 +114,5 @@
   },
   "active": true,
   "settings": { "executionOrder": "v1" },
-  "tags": ["t2d-screening", "scoring"]
+  "tags": []
 }

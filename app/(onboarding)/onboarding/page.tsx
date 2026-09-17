@@ -17,20 +17,20 @@ export default async function OnboardingPage() {
   if (household) redirect("/screening");
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="max-w-lg w-full bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-6">
+    <div className="min-h-screen bg-hero-wash flex items-center justify-center p-4">
+      <div className="max-w-lg w-full bg-card rounded-2xl shadow-soft border border-border p-8 space-y-6">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">
+          <h1 className="text-2xl">
             Créer votre foyer
           </h1>
-          <p className="text-slate-500 text-sm mt-1">
+          <p className="text-muted-foreground text-sm mt-1">
             Commencez le dépistage familial du diabète de type 2
           </p>
         </div>
         <div className="flex gap-3">
           <Link
             href="/onboarding/create"
-            className="flex-1 text-center rounded-lg bg-slate-800 text-white py-2 text-sm font-medium hover:bg-slate-700 transition-colors"
+            className="flex-1 text-center rounded-lg bg-primary text-primary-foreground py-2 text-sm font-medium hover:bg-primary/80 transition-colors"
           >
             Créer un foyer
           </Link>

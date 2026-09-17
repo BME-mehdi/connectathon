@@ -1,16 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "crypto";
 import { createServiceClient } from "@/lib/supabase/server";
 import { computeDiabscore, FORMULA_VERSION } from "@/lib/scoring";
 import { z } from "zod";
 
 // This route is called by n8n OR directly for testing.
-// Uses service role to write risk_scores (bypasses RLS — intentional).
+// Uses service role to write risk_scores (bypasses RLS — intentional),
+// so it MUST verify the shared secret below before touching the DB —
+// without it, anyone who learns a screening_response_id could write
+// arbitrary risk_scores rows and repeatedly re-trigger referral creation,
+// corrupting the CNAM-facing aggregate stats this app is built to protect.
 
 const WebhookSchema = z.object({
   screening_response_id: z.string().uuid(),
 });
 
+function isAuthorized(req: NextRequest): boolean {
+  const secret = process.env.SCORING_WEBHOOK_SECRET;
+  if (!secret) return false; // fail closed if misconfigured
+
+  const provided = req.headers.get("x-webhook-secret") ?? "";
+  const a = Buffer.from(provided);
+  const b = Buffer.from(secret);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
 export async function POST(req: NextRequest) {
+  if (!isAuthorized(req)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const body = await req.json();
   const parsed = WebhookSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });

@@ -16,7 +16,7 @@ export type HouseholdCreate = z.infer<typeof HouseholdCreateSchema>;
 // ── Family member ──────────────────────────────────────────────────────────────
 
 export const FamilyMemberSchema = z.object({
-  household_id:   z.string().uuid(),
+  household_id:   z.string().uuid().optional(),
   full_name:      z.string().min(1, "Name is required").max(100),
   relation:       z.enum(["self", "spouse", "child", "parent", "sibling", "other"]),
   is_minor:       z.boolean(),

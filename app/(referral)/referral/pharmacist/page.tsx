@@ -17,11 +17,12 @@ export default async function PharmacistPage() {
     .order("scheduled_at", { ascending: true });
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4">
+    <div className="min-h-screen bg-background p-4">
       <div className="max-w-2xl mx-auto space-y-6">
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
-          <h1 className="text-xl font-semibold text-slate-900">Rendez-vous à confirmer</h1>
-          <p className="text-slate-500 text-sm mt-1">
+        <div className="bg-card rounded-2xl border border-border shadow-soft p-6">
+          <p className="label-caps text-accent-foreground mb-1">Laboratory Results</p>
+          <h1 className="text-xl">Rendez-vous à confirmer</h1>
+          <p className="text-muted-foreground text-sm mt-1">
             Confirmez les tests après réalisation. Seule cette action déclenche le statut « confirmé ».
           </p>
         </div>
@@ -38,11 +39,11 @@ export default async function PharmacistPage() {
             {appointments.map(apt => {
               const referral = apt.referrals as any;
               return (
-                <li key={apt.id} className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
+                <li key={apt.id} className="bg-card rounded-xl border border-border p-4 space-y-3">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="font-medium text-slate-800">{referral?.family_members?.full_name}</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="font-medium text-foreground">{referral?.family_members?.full_name}</p>
+                      <p className="text-xs text-muted-foreground">
                         {new Date(apt.scheduled_at).toLocaleDateString("fr-FR", { dateStyle: "long" })}
                       </p>
                     </div>
@@ -56,7 +57,7 @@ export default async function PharmacistPage() {
             })}
           </ul>
         ) : (
-          <p className="text-center text-slate-400 text-sm py-8">
+          <p className="text-center text-muted-foreground text-sm py-8">
             Aucun rendez-vous en attente de confirmation.
           </p>
         )}
