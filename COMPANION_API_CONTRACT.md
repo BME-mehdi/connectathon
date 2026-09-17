@@ -81,7 +81,7 @@ install):
 
 ```
 OLLAMA_BASE_URL=http://127.0.0.1:11434
-OLLAMA_MODEL=medgemma
+OLLAMA_MODEL=medgemma1.5:latest
 ```
 
 If your local model tag differs (e.g. a specific quantization or version

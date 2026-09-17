@@ -18,6 +18,142 @@ code below.
 
 ---
 
+## 🚀 Installation & Quick Start Guide
+
+Follow these steps to set up the project locally for development or demonstration.
+
+> [!IMPORTANT]
+> **API Key & Security Rules**:
+> All sensitive credentials (`SUPABASE_SERVICE_ROLE_KEY`, `SCORING_WEBHOOK_SECRET`, etc.) must reside exclusively in `.env.local`. **Never commit `.env.local` or any private API keys to GitHub.** The repository's `.gitignore` automatically excludes `.env*` files by default.
+
+### 1. Prerequisites
+- **Node.js**: `20.x` or `22.x` (LTS recommended)
+- **Git**
+- **Supabase**: A free [Supabase Cloud](https://supabase.com) project or Docker for local Supabase CLI
+- **Ollama**: Required for the local private WHO lifestyle AI companion ([ollama.com](https://ollama.com))
+
+---
+
+### 2. Clone and Install Dependencies
+
+```bash
+git clone git@github.com:BME-mehdi/connectathon.git
+cd connectathon
+npm install
+```
+
+---
+
+### 3. Configure Environment Variables
+
+Create your local configuration file from the template:
+
+```bash
+cp .env.example .env.local
+```
+
+Open `.env.local` in your editor and configure the variables:
+
+| Variable | Description | Example / Default |
+| :--- | :--- | :--- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase API endpoint | `https://your-project-ref.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase public anonymous key | `sb_publishable_...` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase private administrative secret (*server-side only*) | `sb_secret_...` |
+| `NEXT_PUBLIC_SITE_URL` | Base URL of your app for redirects and invites | `http://localhost:3000` |
+| `SCORING_WEBHOOK_SECRET` | Secret token for external scoring verification | Any secure random string |
+| `OLLAMA_BASE_URL` | Local Ollama HTTP daemon endpoint | `http://127.0.0.1:11434` |
+| `OLLAMA_MODEL` | Ollama model tag for the lifestyle assistant | `medgemma1.5:latest` (or `medgemma`) |
+
+---
+
+### 4. Setting up Ollama (WHO Lifestyle AI Companion)
+
+The platform embeds a private, on-device AI companion offering WHO-grounded lifestyle guidance. All inference runs locally through Ollama so personal health conversations never leave the user's device.
+
+#### Step 4.1: Install Ollama
+- **Linux**:
+  ```bash
+  curl -fsSL https://ollama.com/install.sh | sh
+  ```
+- **macOS**:
+  ```bash
+  brew install ollama
+  # or download the installer from https://ollama.com/download
+  ```
+- **Windows**:
+  Download and run the installer from [ollama.com/download](https://ollama.com/download).
+
+#### Step 4.2: Pull the Medical Companion Model
+Pull the recommended medical model:
+```bash
+ollama pull medgemma1.5:latest
+```
+*(If your environment uses a different tag, e.g. `medgemma` or a custom Modelfile, pull that tag instead).*
+
+#### Step 4.3: Verify the Installed Model
+List your locally installed models:
+```bash
+ollama list
+```
+Make sure the name in the output matches `OLLAMA_MODEL` in your `.env.local` (for example, `medgemma1.5:latest`).
+
+#### Step 4.4: Start the Ollama Service
+In a separate terminal, start the Ollama server (if not already running as a system service):
+```bash
+ollama serve
+```
+Verify the API is running:
+```bash
+curl http://127.0.0.1:11434/api/tags
+```
+
+---
+
+### 5. Database Setup (Supabase)
+
+#### Option A: Supabase Cloud (Quickest)
+1. Log in to [Supabase Dashboard](https://supabase.com/dashboard) and create a new project.
+2. In the **SQL Editor**, run the SQL migration scripts in `supabase/migrations/` in order:
+   - `001_initial_schema.sql` (core tables: households, family_members, consents, screenings, etc.)
+   - `002_rls_policies.sql` (Row-Level Security)
+   - `003_data_firewall.sql` (payer firewall & anonymized views)
+   - `004_seed_pharmacies.sql` (baseline partner labs/pharmacies)
+   - `005_household_membership_access.sql` (household member access policies)
+   - `006_medical_labs_referral_flow.sql` (lab referral flow & app_metadata role)
+3. Retrieve your **Project URL**, **anon key**, and **service_role key** from **Settings → API** and paste them into `.env.local`.
+
+#### Option B: Local Supabase with Docker
+```bash
+npx supabase start
+npx supabase migration up
+```
+
+---
+
+### 6. Run the Application
+
+Start the Next.js development server:
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
+
+### 7. Run Verification & Tests
+
+To ensure clinical scoring calculations and application routes pass checks:
+
+```bash
+npm run test:scoring   # Run the 27 deterministic clinical validation tests
+npm run typecheck      # Validate TypeScript types
+npm run build          # Test production Next.js build
+```
+
+---
+
 ## 1. Architecture overview
 
 Three layers, deliberately kept separate so each can change independently:

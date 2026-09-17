@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     : [];
 
   const baseUrl = process.env.OLLAMA_BASE_URL ?? "http://127.0.0.1:11434";
-  const model = process.env.OLLAMA_MODEL ?? "medgemma";
+  const model = process.env.OLLAMA_MODEL ?? "medgemma1.5:latest";
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), OLLAMA_TIMEOUT_MS);

@@ -97,12 +97,15 @@ export default function CompanionPanel() {
               </div>
             ))}
             {loading && (
-              <div className="flex justify-start">
+              <div className="flex flex-col items-start gap-1">
                 <div className="bg-secondary rounded-xl px-3 py-2 flex items-center gap-1">
                   <span className="size-1.5 rounded-full bg-secondary-foreground/50 animate-bounce [animation-delay:-0.3s]" />
                   <span className="size-1.5 rounded-full bg-secondary-foreground/50 animate-bounce [animation-delay:-0.15s]" />
                   <span className="size-1.5 rounded-full bg-secondary-foreground/50 animate-bounce" />
                 </div>
+                <p className="text-[10px] text-muted-foreground px-1">
+                  Modèle local — la réponse peut prendre jusqu&apos;à une minute.
+                </p>
               </div>
             )}
             <div ref={bottomRef} />
