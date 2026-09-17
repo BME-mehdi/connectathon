@@ -15,7 +15,7 @@ export default async function ReferralDetailPage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  const { data: referral } = await supabase
+  let { data: referral } = await supabase
     .from("referrals")
     .select(`
       id, status, created_at, result_tier, result_summary, results_entered_at,
@@ -27,6 +27,27 @@ export default async function ReferralDetailPage({ params }: Props) {
     .eq("id", referralId)
     .single();
 
+  if (!referral) {
+    const { data: fallbackReferral } = await supabase
+      .from("referrals")
+      .select(`
+        id, status, created_at, result_tier, result_summary, results_entered_at,
+        family_members(full_name),
+        partner_pharmacies(name, address, phone, region),
+        appointments(id, scheduled_at, attended_at),
+        risk_scores(score_value, tier, formula_version, computed_at)
+      `)
+      .eq("id", referralId)
+      .single();
+
+    if (fallbackReferral) {
+      referral = {
+        ...fallbackReferral,
+        partner_labs: (fallbackReferral as any).partner_pharmacies,
+      } as any;
+    }
+  }
+
   if (!referral) redirect("/referral");
 
   const status = STATUS_LABELS[referral.status] ?? { fr: referral.status, color: "bg-muted text-muted-foreground" };
@@ -36,7 +57,8 @@ export default async function ReferralDetailPage({ params }: Props) {
   const appointment = (referral.appointments as any[])?.[0];
 
   // "no_show" is a detour off the main path, not a step on it
-  const stepIndex = STEPS.indexOf(referral.status as typeof STEPS[number]);
+  const normalizedStatus = referral.status === "scheduled" || referral.status === "flagged" ? "request_sent" : referral.status;
+  const stepIndex = STEPS.indexOf(normalizedStatus as typeof STEPS[number]);
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -102,7 +124,7 @@ export default async function ReferralDetailPage({ params }: Props) {
             </div>
           )}
 
-          {(referral.status === "request_sent" || referral.status === "no_show") && (
+          {(referral.status === "request_sent" || referral.status === "scheduled" || referral.status === "no_show") && (
             <Link
               href={`/referral/${referralId}/book`}
               className="block text-center rounded-lg bg-primary text-primary-foreground py-2 text-sm font-medium hover:bg-primary/80 transition-colors"

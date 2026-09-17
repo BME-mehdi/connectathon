@@ -18,10 +18,14 @@ import type { ReferralStatus } from "@/lib/validation/screening";
 
 /** Allowed next states for each current state */
 export const ALLOWED_TRANSITIONS: Record<ReferralStatus, ReferralStatus[]> = {
-  request_sent:  ["analyzing", "no_show"],
-  analyzing:     ["results_ready"],
-  no_show:       ["request_sent"],
-  results_ready: [], // terminal
+  request_sent:        ["analyzing", "no_show"],
+  analyzing:           ["results_ready"],
+  no_show:             ["request_sent", "scheduled"],
+  results_ready:       [], // terminal
+  scheduled:           ["analyzing", "no_show", "completed"],
+  flagged:             ["scheduled", "request_sent"],
+  completed:           [], // terminal
+  physician_confirmed: [], // terminal
 };
 
 /** Roles permitted to trigger each transition. Absent = the household itself. */

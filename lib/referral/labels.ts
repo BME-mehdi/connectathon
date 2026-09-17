@@ -1,8 +1,12 @@
 export const STATUS_LABELS: Record<string, { fr: string; color: string }> = {
-  request_sent:  { fr: "Demande envoyée",        color: "bg-blue-100 text-blue-800" },
-  analyzing:     { fr: "Analyse en cours",        color: "bg-amber-100 text-amber-800" },
-  no_show:       { fr: "Consultation manquée",    color: "bg-rose-100 text-rose-800" },
-  results_ready: { fr: "Résultats disponibles",   color: "bg-emerald-100 text-emerald-800" },
+  request_sent:        { fr: "Demande envoyée",        color: "bg-blue-100 text-blue-800" },
+  scheduled:           { fr: "Consultation programmée", color: "bg-blue-100 text-blue-800" },
+  flagged:             { fr: "À risque élevé",          color: "bg-amber-100 text-amber-800" },
+  analyzing:           { fr: "Analyse en cours",        color: "bg-amber-100 text-amber-800" },
+  no_show:             { fr: "Consultation manquée",    color: "bg-rose-100 text-rose-800" },
+  results_ready:       { fr: "Résultats disponibles",   color: "bg-emerald-100 text-emerald-800" },
+  completed:           { fr: "Consultation terminée",   color: "bg-emerald-100 text-emerald-800" },
+  physician_confirmed: { fr: "Confirmé par médecin",   color: "bg-emerald-100 text-emerald-800" },
 };
 
 export const RESULT_TIER_LABELS: Record<string, { fr: string; color: string }> = {

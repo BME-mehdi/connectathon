@@ -90,6 +90,7 @@ export type FindriscLite       = z.infer<typeof FindriscLiteSchema>;
 
 export const REFERRAL_STATUSES = [
   "request_sent", "analyzing", "no_show", "results_ready",
+  "scheduled", "flagged", "completed", "physician_confirmed",
 ] as const;
 
 export type ReferralStatus = typeof REFERRAL_STATUSES[number];

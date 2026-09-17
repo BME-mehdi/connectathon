@@ -8,7 +8,7 @@ export default async function ReferralPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  const { data: referrals } = await supabase
+  let { data: referrals } = await supabase
     .from("referrals")
     .select(`
       id, status, created_at,
@@ -17,6 +17,25 @@ export default async function ReferralPage() {
       appointments(id, scheduled_at)
     `)
     .order("created_at", { ascending: false });
+
+  if (!referrals) {
+    const { data: fallbackReferrals } = await supabase
+      .from("referrals")
+      .select(`
+        id, status, created_at,
+        family_members(full_name),
+        partner_pharmacies(name, address, region),
+        appointments(id, scheduled_at)
+      `)
+      .order("created_at", { ascending: false });
+
+    if (fallbackReferrals) {
+      referrals = fallbackReferrals.map((r: any) => ({
+        ...r,
+        partner_labs: r.partner_pharmacies,
+      }));
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background p-4">

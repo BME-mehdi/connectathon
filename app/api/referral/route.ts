@@ -32,7 +32,7 @@ export async function PATCH(req: NextRequest) {
   // Case 1: reschedule without a status change — only valid while still
   // 'request_sent'. RLS enforces this too (appointments_update_household).
   if (parsed.data.status === referral.status) {
-    if (referral.status !== "request_sent" || !parsed.data.scheduled_at) {
+    if ((referral.status !== "request_sent" && referral.status !== "scheduled") || !parsed.data.scheduled_at) {
       return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
     }
 
@@ -88,7 +88,7 @@ export async function PATCH(req: NextRequest) {
       .update({ attended_at: new Date().toISOString() })
       .eq("referral_id", referral.id);
   }
-  if (parsed.data.status === "request_sent" && parsed.data.scheduled_at) {
+  if ((parsed.data.status === "request_sent" || parsed.data.status === "scheduled") && parsed.data.scheduled_at) {
     await supabase.from("appointments")
       .update({ scheduled_at: parsed.data.scheduled_at })
       .eq("referral_id", referral.id);

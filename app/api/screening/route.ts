@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { ScreeningSubmissionSchema } from "@/lib/validation/screening";
 import { computeDiabscore, FORMULA_VERSION } from "@/lib/scoring";
-import { nextBusinessSlot } from "@/lib/referral/scheduling";
+import { nextBusinessSlot, getDemoConsultationSlot } from "@/lib/referral/scheduling";
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -76,39 +76,108 @@ export async function POST(req: NextRequest) {
 
   let referralId: string | null = null;
   if (result.tier === "high") {
-    const region = (member as any).households?.region as string | undefined;
+    // For demo purposes: find "Laboratoire d'Analyses médicales Farah Messai Mahjoub"
+    let targetLabId: string | null = null;
 
-    const { data: lab } = region
-      ? await admin
+    // 1. Try to find Farah Messai Mahjoub in partner_labs or partner_pharmacies
+    const { data: farahLab } = await admin
+      .from("partner_labs")
+      .select("id")
+      .ilike("name", "%Farah Messai Mahjoub%")
+      .maybeSingle();
+
+    if (farahLab) {
+      targetLabId = farahLab.id;
+    } else {
+      const { data: farahPharm } = await admin
+        .from("partner_pharmacies")
+        .select("id")
+        .ilike("name", "%Farah Messai Mahjoub%")
+        .maybeSingle();
+      if (farahPharm) {
+        targetLabId = farahPharm.id;
+      }
+    }
+
+    // 2. Fallback to regional lab if not found
+    if (!targetLabId) {
+      const region = (member as any).households?.region as string | undefined;
+      if (region) {
+        const { data: regLab } = await admin
           .from("partner_labs")
           .select("id")
           .eq("region", region)
           .eq("is_active", true)
           .limit(1)
-          .maybeSingle()
-      : { data: null };
+          .maybeSingle();
+        if (regLab) {
+          targetLabId = regLab.id;
+        } else {
+          const { data: regPharm } = await admin
+            .from("partner_pharmacies")
+            .select("id")
+            .eq("region", region)
+            .eq("is_active", true)
+            .limit(1)
+            .maybeSingle();
+          if (regPharm) {
+            targetLabId = regPharm.id;
+          }
+        }
+      }
+    }
 
-    const { data: referral, error: referralErr } = await admin
+    // Insert referral (supporting both migration 006 lab_id and original pharmacy_id)
+    let referral: any = null;
+    let referralErr: any = null;
+
+    const res1 = await admin
       .from("referrals")
       .insert({
         family_member_id: response.family_member_id,
         risk_score_id: score.id,
-        lab_id: lab?.id ?? null,
+        lab_id: targetLabId,
         status: "request_sent",
       })
       .select("id")
       .single();
 
-    if (!referralErr && referral && lab) {
-      await admin.from("appointments").insert({
+    if (!res1.error && res1.data) {
+      referral = res1.data;
+    } else {
+      const res2 = await admin
+        .from("referrals")
+        .insert({
+          family_member_id: response.family_member_id,
+          risk_score_id: score.id,
+          pharmacy_id: targetLabId,
+          status: "scheduled",
+        })
+        .select("id")
+        .single();
+      referral = res2.data;
+      referralErr = res2.error;
+    }
+
+    if (!referralErr && referral && targetLabId) {
+      // Demo requirement: Friday at 13h00
+      const scheduledAt = getDemoConsultationSlot().toISOString();
+
+      const appt1 = await admin.from("appointments").insert({
         referral_id: referral.id,
-        lab_id: lab.id,
-        scheduled_at: nextBusinessSlot().toISOString(),
+        lab_id: targetLabId,
+        scheduled_at: scheduledAt,
       });
+
+      if (appt1.error) {
+        await admin.from("appointments").insert({
+          referral_id: referral.id,
+          pharmacy_id: targetLabId,
+          scheduled_at: scheduledAt,
+        });
+      }
       referralId = referral.id;
     } else if (!referralErr && referral) {
-      // No active lab in the household's region — referral still exists so
-      // the family sees "request sent" and can pick a lab once one is added.
       referralId = referral.id;
     }
   }
