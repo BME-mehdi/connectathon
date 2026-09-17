@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:scoring": "vitest run lib/scoring/",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "login": "node scripts/login-link.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
