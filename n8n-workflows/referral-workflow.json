@@ -1,13 +1,19 @@
 {
-  "name": "T2D: Referral Workflow",
+  "name": "T2D: Referral Workflow (optional — app now creates referrals inline; see app/api/screening/route.ts)",
   "nodes": [
     {
-      "parameters": { "path": "referral-trigger", "responseMode": "responseNode" },
+      "parameters": {
+        "path": "referral-trigger",
+        "responseMode": "responseNode"
+      },
       "id": "referral-webhook",
       "name": "Referral Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [240, 300]
+      "position": [
+        240,
+        300
+      ]
     },
     {
       "parameters": {
@@ -15,8 +21,14 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
-            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" }
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            }
           ]
         }
       },
@@ -24,24 +36,36 @@
       "name": "Fetch Member & Region",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [460, 300]
+      "position": [
+        460,
+        300
+      ]
     },
     {
       "parameters": {
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/partner_pharmacies?region=eq.{{ $json[0].households.region }}&is_active=eq.true&limit=1",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/partner_labs?region=eq.{{ $json[0].households.region }}&is_active=eq.true&limit=1",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
-            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" }
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            }
           ]
         }
       },
-      "id": "find-pharmacy",
-      "name": "Find Nearest Pharmacy",
+      "id": "find-lab",
+      "name": "Find Nearest Lab",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [680, 300]
+      "position": [
+        680,
+        300
+      ]
     },
     {
       "parameters": {
@@ -50,27 +74,57 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
-            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
-            { "name": "Prefer", "value": "return=representation" }
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
           ]
         },
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
-            { "name": "family_member_id", "value": "={{ $('Referral Webhook').item.json.family_member_id }}" },
-            { "name": "risk_score_id",    "value": "={{ $('Referral Webhook').item.json.risk_score_id }}" },
-            { "name": "pharmacy_id",      "value": "={{ $json[0].id }}" },
-            { "name": "status",           "value": "flagged" }
+            {
+              "name": "family_member_id",
+              "value": "={{ $('Referral Webhook').item.json.family_member_id }}"
+            },
+            {
+              "name": "risk_score_id",
+              "value": "={{ $('Referral Webhook').item.json.risk_score_id }}"
+            },
+            {
+              "name": "lab_id",
+              "value": "={{ $json[0].id }}"
+            },
+            {
+              "name": "status",
+              "value": "request_sent"
+            }
           ]
         },
-        "options": { "response": { "response": { "responseFormat": "json" } } }
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
       },
       "id": "create-referral",
       "name": "Create Referral",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [900, 300]
+      "position": [
+        900,
+        300
+      ]
     },
     {
       "parameters": {
@@ -80,25 +134,86 @@
       "name": "Send Notification (Stub)",
       "type": "n8n-nodes-base.function",
       "typeVersion": 1,
-      "position": [1120, 300]
+      "position": [
+        1120,
+        300
+      ]
     },
     {
-      "parameters": { "respondWith": "json", "responseBody": "={ \"status\": \"referral_created\" }" },
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"status\": \"referral_created\" }"
+      },
       "id": "respond",
       "name": "Respond",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [1340, 300]
+      "position": [
+        1340,
+        300
+      ]
     }
   ],
   "connections": {
-    "Referral Webhook":   { "main": [[{ "node": "Fetch Member & Region", "type": "main", "index": 0 }]] },
-    "Fetch Member & Region": { "main": [[{ "node": "Find Nearest Pharmacy", "type": "main", "index": 0 }]] },
-    "Find Nearest Pharmacy": { "main": [[{ "node": "Create Referral",       "type": "main", "index": 0 }]] },
-    "Create Referral":    { "main": [[{ "node": "Send Notification (Stub)", "type": "main", "index": 0 }]] },
-    "Send Notification (Stub)": { "main": [[{ "node": "Respond",            "type": "main", "index": 0 }]] }
+    "Referral Webhook": {
+      "main": [
+        [
+          {
+            "node": "Fetch Member & Region",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Member & Region": {
+      "main": [
+        [
+          {
+            "node": "Find Nearest Lab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Nearest Pharmacy": {
+      "main": [
+        [
+          {
+            "node": "Create Referral",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Referral": {
+      "main": [
+        [
+          {
+            "node": "Send Notification (Stub)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Notification (Stub)": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
   "active": true,
-  "settings": { "executionOrder": "v1" },
+  "settings": {
+    "executionOrder": "v1"
+  },
   "tags": []
 }

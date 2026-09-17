@@ -22,6 +22,7 @@ export const FamilyMemberSchema = z.object({
   is_minor:       z.boolean(),
   date_of_birth:  z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD"),
   biological_sex: z.enum(["male", "female", "prefer_not_to_say"]).optional(),
+  email:          z.string().email("Invalid email"),
 });
 export type FamilyMember = z.infer<typeof FamilyMemberSchema>;
 
@@ -79,15 +80,30 @@ export type DiabscoreCore      = z.infer<typeof DiabscoreCoreSchema>;
 export type FindriscLite       = z.infer<typeof FindriscLiteSchema>;
 
 // ── Referral state transition ─────────────────────────────────────────────────
+//
+//   request_sent → analyzing   → results_ready   (lab marks attended, then enters results)
+//               \→ no_show     → request_sent    (lab marks missed; household re-requests)
+//
+// A referral is created already at 'request_sent' — the server assigns the
+// nearest lab and a default appointment slot as soon as a high risk score is
+// computed, there is no separate "unassigned" state to book from.
 
 export const REFERRAL_STATUSES = [
-  "flagged", "scheduled", "completed", "no_show", "physician_confirmed",
+  "request_sent", "analyzing", "no_show", "results_ready",
 ] as const;
 
 export type ReferralStatus = typeof REFERRAL_STATUSES[number];
 
+export const RESULT_TIERS = ["normal", "confirmed_prediabetes", "confirmed_diabetes"] as const;
+export type ResultTier = typeof RESULT_TIERS[number];
+
 export const ReferralUpdateSchema = z.object({
-  referral_id: z.string().uuid(),
-  status:      z.enum(REFERRAL_STATUSES),
+  referral_id:  z.string().uuid(),
+  status:       z.enum(REFERRAL_STATUSES),
+  // Reschedule: provided when status is (or is being set back to) 'request_sent'
+  scheduled_at: z.string().datetime().optional(),
+  // Lab result entry: required when status is 'results_ready'
+  result_tier:    z.enum(RESULT_TIERS).optional(),
+  result_summary: z.string().max(2000).optional(),
 });
 export type ReferralUpdate = z.infer<typeof ReferralUpdateSchema>;

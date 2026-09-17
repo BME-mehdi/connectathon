@@ -1,19 +1,16 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { getMyHousehold } from "@/lib/household";
 
 export default async function OnboardingPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  // Check if household already exists
-  const { data: household } = await supabase
-    .from("households")
-    .select("id")
-    .eq("owner_user_id", user.id)
-    .single();
-
+  // Check if a household already exists — either owned, or one this user
+  // was invited into.
+  const household = await getMyHousehold(supabase, user.id);
   if (household) redirect("/screening");
 
   return (

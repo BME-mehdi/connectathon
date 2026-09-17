@@ -1,18 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { STATUS_LABELS, RESULT_TIER_LABELS } from "@/lib/referral/labels";
 
 interface Props {
   params: Promise<{ referralId: string }>;
 }
 
-const STATUS_LABELS: Record<string, { fr: string; color: string }> = {
-  flagged:             { fr: "En attente de rendez-vous",  color: "bg-amber-100 text-amber-800" },
-  scheduled:           { fr: "Rendez-vous planifié",       color: "bg-blue-100 text-blue-800" },
-  completed:           { fr: "Test réalisé",               color: "bg-muted text-muted-foreground" },
-  no_show:             { fr: "Absent au rendez-vous",      color: "bg-rose-100 text-rose-800" },
-  physician_confirmed: { fr: "Confirmé par le pharmacien", color: "bg-emerald-100 text-emerald-800" },
-};
+const STEPS = ["request_sent", "analyzing", "results_ready"] as const;
 
 export default async function ReferralDetailPage({ params }: Props) {
   const { referralId } = await params;
@@ -23,10 +18,10 @@ export default async function ReferralDetailPage({ params }: Props) {
   const { data: referral } = await supabase
     .from("referrals")
     .select(`
-      id, status, created_at,
+      id, status, created_at, result_tier, result_summary, results_entered_at,
       family_members(full_name),
-      partner_pharmacies(name, address, phone, region),
-      appointments(id, scheduled_at, confirmed_by_pharmacist_at),
+      partner_labs(name, address, phone, region),
+      appointments(id, scheduled_at, attended_at),
       risk_scores(score_value, tier, formula_version, computed_at)
     `)
     .eq("id", referralId)
@@ -35,10 +30,13 @@ export default async function ReferralDetailPage({ params }: Props) {
   if (!referral) redirect("/referral");
 
   const status = STATUS_LABELS[referral.status] ?? { fr: referral.status, color: "bg-muted text-muted-foreground" };
-  const pharmacy = referral.partner_pharmacies as any;
-  const member   = referral.family_members as any;
-  const score    = referral.risk_scores as any;
+  const lab    = referral.partner_labs as any;
+  const member = referral.family_members as any;
+  const score  = referral.risk_scores as any;
   const appointment = (referral.appointments as any[])?.[0];
+
+  // "no_show" is a detour off the main path, not a step on it
+  const stepIndex = STEPS.indexOf(referral.status as typeof STEPS[number]);
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -55,6 +53,20 @@ export default async function ReferralDetailPage({ params }: Props) {
             </span>
           </div>
 
+          {/* Progress steps */}
+          {stepIndex >= 0 && (
+            <div className="flex items-center gap-1">
+              {STEPS.map((s, i) => (
+                <div key={s} className="flex-1 flex items-center gap-1">
+                  <div className={`h-1.5 flex-1 rounded-full ${i <= stepIndex ? "bg-accent" : "bg-muted"}`} />
+                </div>
+              ))}
+            </div>
+          )}
+          {referral.status === "no_show" && (
+            <p className="text-xs text-rose-600">Consultation manquée — redemandez un rendez-vous ci-dessous.</p>
+          )}
+
           {score && (
             <div className="bg-muted rounded-xl px-4 py-3 space-y-1">
               <p className="text-xs text-muted-foreground">Score DIABSCORE</p>
@@ -65,45 +77,62 @@ export default async function ReferralDetailPage({ params }: Props) {
             </div>
           )}
 
-          {pharmacy && (
+          {lab && (
             <div className="space-y-1">
-              <p className="label-caps text-muted-foreground">Pharmacie partenaire</p>
-              <p className="text-sm font-medium text-foreground">{pharmacy.name}</p>
-              <p className="text-xs text-muted-foreground">{pharmacy.address}</p>
-              <p className="text-xs text-muted-foreground">{pharmacy.phone}</p>
+              <p className="label-caps text-muted-foreground">Laboratoire partenaire</p>
+              <p className="text-sm font-medium text-foreground">{lab.name}</p>
+              <p className="text-xs text-muted-foreground">{lab.address}</p>
+              <p className="text-xs text-muted-foreground">{lab.phone}</p>
             </div>
           )}
 
-          {appointment ? (
+          {appointment && (
             <div className="space-y-1">
               <p className="label-caps text-muted-foreground">Rendez-vous</p>
               <p className="text-sm text-foreground">
                 {new Date(appointment.scheduled_at).toLocaleDateString("fr-FR", {
-                  weekday: "long", day: "numeric", month: "long", year: "numeric",
+                  weekday: "long", day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit",
                 })}
               </p>
-              {appointment.confirmed_by_pharmacist_at && (
+              {appointment.attended_at && (
                 <p className="text-xs text-emerald-600">
-                  Confirmé le {new Date(appointment.confirmed_by_pharmacist_at).toLocaleDateString("fr-FR")}
+                  Consultation confirmée le {new Date(appointment.attended_at).toLocaleDateString("fr-FR")}
                 </p>
               )}
             </div>
-          ) : (
-            referral.status === "flagged" && (
-              <Link
-                href={`/referral/${referralId}/book`}
-                className="block text-center rounded-lg bg-primary text-primary-foreground py-2 text-sm font-medium hover:bg-primary/80 transition-colors"
-              >
-                Choisir un créneau →
-              </Link>
-            )
+          )}
+
+          {(referral.status === "request_sent" || referral.status === "no_show") && (
+            <Link
+              href={`/referral/${referralId}/book`}
+              className="block text-center rounded-lg bg-primary text-primary-foreground py-2 text-sm font-medium hover:bg-primary/80 transition-colors"
+            >
+              {referral.status === "no_show" ? "Redemander un rendez-vous →" : "Changer le créneau →"}
+            </Link>
+          )}
+
+          {referral.status === "results_ready" && referral.result_tier && (
+            <div className="space-y-2">
+              <p className="label-caps text-muted-foreground">Résultats</p>
+              <span className={`inline-block text-xs font-medium px-2 py-1 rounded-full ${RESULT_TIER_LABELS[referral.result_tier]?.color}`}>
+                {RESULT_TIER_LABELS[referral.result_tier]?.fr}
+              </span>
+              {referral.result_summary && (
+                <p className="text-sm text-foreground">{referral.result_summary}</p>
+              )}
+              {referral.results_entered_at && (
+                <p className="text-xs text-muted-foreground">
+                  Reçus le {new Date(referral.results_entered_at).toLocaleDateString("fr-FR")}
+                </p>
+              )}
+            </div>
           )}
         </div>
 
         <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
           <p className="text-xs text-blue-700">
-            <strong>Rappel :</strong> Ce test de confirmation est réalisé par un pharmacien agréé.
-            Le statut « Confirmé » ne peut être défini que manuellement par le professionnel de santé après l'examen.
+            <strong>Rappel :</strong> Ce test de confirmation est réalisé par un laboratoire médical agréé.
+            Seul le laboratoire peut confirmer la consultation et transmettre les résultats.
           </p>
         </div>
 

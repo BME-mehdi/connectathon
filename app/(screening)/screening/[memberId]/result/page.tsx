@@ -18,7 +18,7 @@ const TIER_EXPLANATIONS: Record<string, string> = {
   moderate:
     "Votre score indique un risque modéré. Il est recommandé de consulter un professionnel de santé pour un suivi et d'adopter des mesures préventives.",
   high:
-    "Votre score indique un risque élevé. Nous vous orientons vers un test de confirmation auprès d'une pharmacie partenaire. Un pharmacien vous contactera.",
+    "Votre score indique un risque élevé. Nous vous orientons vers un test de confirmation auprès d'un laboratoire médical partenaire.",
 };
 
 export default async function ResultPage({ params }: Props) {
@@ -86,17 +86,20 @@ export default async function ResultPage({ params }: Props) {
           <div className="bg-white rounded-2xl border border-slate-300 p-5 space-y-3">
             <p className="text-sm font-medium text-slate-800">Prochaine étape : test de confirmation</p>
             <p className="text-sm text-slate-500">
-              Un rendez-vous dans une pharmacie partenaire de votre région a été créé.
+              Une demande de consultation dans un laboratoire médical partenaire de votre région a été envoyée.
             </p>
             <a
               href="/referral"
               className="block text-center rounded-lg bg-slate-800 text-white py-2 text-sm font-medium hover:bg-slate-700 transition-colors"
             >
-              Voir mon rendez-vous →
+              Voir ma demande →
             </a>
           </div>
         )}
 
+        <a href={`/screening/${memberId}/history`} className="block text-center text-slate-500 text-sm underline">
+          Voir l&apos;historique de ce membre
+        </a>
         <a href="/screening" className="block text-center text-slate-500 text-sm underline">
           ← Retour aux membres
         </a>

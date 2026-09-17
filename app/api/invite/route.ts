@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { InviteAdultSchema } from "@/lib/validation/invite";
+import { getMyHousehold } from "@/lib/household";
 
 /**
  * POST /api/invite
@@ -22,11 +23,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { data: household } = await supabase
-    .from("households")
-    .select("id, name")
-    .eq("owner_user_id", user.id)
-    .single();
+  // Any adult already in the household — owner or invited member — can
+  // invite another adult, not just the owner.
+  const household = await getMyHousehold(supabase, user.id);
   if (!household) return NextResponse.json({ error: "Household not found" }, { status: 404 });
 
   const { origin } = new URL(req.url);

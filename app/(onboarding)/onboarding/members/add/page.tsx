@@ -29,6 +29,7 @@ export default function AddMinorPage() {
   const [fullName, setFullName] = useState("");
   const [relation, setRelation] = useState("");
   const [dob, setDob] = useState("");
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,6 +45,7 @@ export default function AddMinorPage() {
         full_name: fullName,
         relation,
         date_of_birth: dob,
+        email,
         is_minor: true,
       }),
     });
@@ -111,6 +113,21 @@ export default function AddMinorPage() {
               onChange={(e) => setDob(e.target.value)}
               className="w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/50"
             />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-foreground">Email de contact</label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="parent@exemple.com"
+              className="w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/50"
+            />
+            <p className="text-xs text-muted-foreground">
+              Utilisé pour recevoir les résultats et notifications de dépistage de cet enfant.
+            </p>
           </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}

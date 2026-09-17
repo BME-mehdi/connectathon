@@ -1,14 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-
-const STATUS_LABELS: Record<string, { fr: string; color: string }> = {
-  flagged:             { fr: "En attente de rendez-vous", color: "bg-amber-100 text-amber-800" },
-  scheduled:           { fr: "Rendez-vous planifié",      color: "bg-blue-100 text-blue-800" },
-  completed:           { fr: "Test réalisé",               color: "bg-muted text-muted-foreground" },
-  no_show:             { fr: "Absent au rendez-vous",      color: "bg-rose-100 text-rose-800" },
-  physician_confirmed: { fr: "Confirmé par le pharmacien", color: "bg-emerald-100 text-emerald-800" },
-};
+import { STATUS_LABELS } from "@/lib/referral/labels";
 
 export default async function ReferralPage() {
   const supabase = await createClient();
@@ -20,7 +13,7 @@ export default async function ReferralPage() {
     .select(`
       id, status, created_at,
       family_members(full_name),
-      partner_pharmacies(name, address, region),
+      partner_labs(name, address, region),
       appointments(id, scheduled_at)
     `)
     .order("created_at", { ascending: false });
@@ -31,7 +24,7 @@ export default async function ReferralPage() {
         <div className="bg-card rounded-2xl border border-border shadow-soft p-6">
           <h1 className="text-xl">Mes orientations</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Suivi des tests de confirmation en pharmacie partenaire
+            Suivi des tests de confirmation en laboratoire médical partenaire
           </p>
         </div>
 
@@ -45,7 +38,7 @@ export default async function ReferralPage() {
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="font-medium text-foreground">{(r.family_members as any)?.full_name}</p>
-                      <p className="text-xs text-muted-foreground">{(r.partner_pharmacies as any)?.name}</p>
+                      <p className="text-xs text-muted-foreground">{(r.partner_labs as any)?.name}</p>
                     </div>
                     <span className={`text-xs font-medium px-2 py-1 rounded-full ${status.color}`}>
                       {status.fr}

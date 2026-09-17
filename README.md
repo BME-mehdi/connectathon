@@ -266,29 +266,40 @@ and nothing that imports `ai` writes to `risk_scores`.
 
 ### 5.2 The referral state machine
 
+The patient never sees "flagged" or "physician_confirmed" — a referral is
+created by the server already carrying its lab assignment, immediately after
+a high-risk score, so the first state a family ever sees is "request sent".
 `lib/referral/stateMachine.ts` defines the only legal transitions and which
 role may trigger each one:
 
 ```
-flagged ──► scheduled ──► completed ──┐
-                      └─► no_show ────┴──► physician_confirmed
-                                           (pharmacist role ONLY,
-                                            never automated)
+request_sent ──► analyzing ──► results_ready
+      ▲                             (lab role ONLY, never automated)
+      └──────── no_show ◄───────────┘
+       (household reschedules)   (lab marks a missed visit)
 ```
 
 This is checked twice, deliberately: once in `lib/referral/stateMachine.ts`
 before any application write, and again at the database level via the RLS
-policies on `referrals`/`appointments` in `002_rls_policies.sql` — the same
-belt-and-suspenders principle as the data firewall.
+policies on `referrals`/`appointments` in
+`006_medical_labs_referral_flow.sql` — the same belt-and-suspenders principle
+as the data firewall.
 
-> **Current limitation:** the pharmacist check on both layers currently keys
-> off different, and separately weak, signals — the API routes read
-> `user_metadata.role`, which any signed-in user can set on themselves via the
-> client SDK, and the RLS policy reads the JWT's top-level `role` claim, which
-> Supabase always sets to `authenticated` (there's no custom-access-token hook
-> populating anything else yet). The fix is to move the pharmacist flag to
-> `app_metadata` (admin-settable only) on both sides — small, contained change,
-> not yet done.
+The lab role lives in `app_metadata` on both sides — the API route reads
+`session.user.app_metadata.role`, and RLS reads
+`auth.jwt() -> 'app_metadata' ->> 'role'`. Two things this deliberately does
+NOT use: `user_metadata`, which any signed-in user can set on themselves via
+the client SDK (so it can never be trusted for authorization), and the JWT's
+top-level `role` claim, which Supabase always sets to `authenticated` for
+every signed-in user regardless of app role (that's the Postgres role, not
+ours — a policy keyed on it can never match anyone). `app_metadata` is the
+one place that's both present in the JWT by default and writable only via
+the service-role admin API. There's intentionally no self-service way to
+become lab staff — grant it with:
+
+```
+node scripts/grant-lab-role.mjs someone@example.com
+```
 
 ---
 
@@ -423,20 +434,34 @@ but doesn't yet prove the *running dashboard* uses this role.)
 Kept here deliberately so anyone picking up a module can see what's actually
 done versus what's demo-shaped:
 
-1. **Payer dashboard doesn't authenticate as `payer_readonly` yet** (§4).
-2. **Pharmacist gating relies on self-editable `user_metadata`** instead of
-   `app_metadata`, both in the API routes and the RLS policies (§5.2).
-3. **Non-owner household members can't navigate the app yet** — several pages
-   (`/onboarding`, `/onboarding/members`, `/screening`, `/api/members` GET)
-   resolve "my household" via `owner_user_id = auth.uid()` only, instead of
-   the owner-or-member resolution the RLS helper `auth.user_household_id()`
-   already supports. An invited adult who accepts today gets bounced back to
-   "create a household" instead of seeing the one they joined.
-4. **Booking a slot doesn't create an `appointments` row** — `/referral/[id]/book`
-   only updates `referrals.status`, so the chosen slot isn't persisted and the
-   referral detail page has no way to render the result.
+1. ~~Payer dashboard doesn't authenticate as `payer_readonly` yet.~~ Removed —
+   the CNAM/insurer dashboard has been dropped from the frontend for now; the
+   data-firewall database objects (§4) remain in place for when it returns.
+2. ~~Pharmacist gating relies on self-editable `user_metadata`.~~ Fixed —
+   the role now lives in `app_metadata` on both sides (§5.2).
+3. ~~Non-owner household members can't navigate the app.~~ Fixed —
+   `lib/household.ts#getMyHousehold` resolves owner-or-member on every page
+   and route that used to filter on `owner_user_id` alone; RLS on
+   `households`/`family_members` was extended to match
+   (`005_household_membership_access.sql`).
+4. ~~Booking a slot doesn't create an `appointments` row.~~ Changed —
+   a referral is now created with its appointment already attached (nearest
+   lab in the household's region, next business day) the moment a high-risk
+   score is computed; `/referral/[id]/book` reschedules that appointment
+   rather than creating the first one.
 5. `swr`, `framer-motion`, and `next-intl` are installed but not yet wired in
-   (no live polling for the async score, no reveal animation, no locale
-   switching beyond the `messages/*.json` dictionaries).
+   (no live polling for the async score — no longer needed, scoring is now
+   synchronous; no reveal animation; no locale switching beyond the
+   `messages/*.json` dictionaries, which are themselves stale post-rename).
 6. `CompanionPanel.tsx` sends `{ message }` only; `COMPANION_API_CONTRACT.md`
    specifies `{ message, household_id, locale }`.
+7. **Scoring no longer depends on n8n** — `/api/screening` computes the
+   DIABSCORE result and auto-creates the lab referral inline
+   (`app/api/screening/route.ts`), using the same formula the n8n workflows
+   in `n8n-workflows/` implement. Those workflows still exist as optional
+   reference automation (e.g. if scoring should later move to a separate
+   service) but nothing in the app depends on them running.
+8. **Lab matching is by exact governorate/region only** — there's no
+   geocoding in the schema, so "closest lab" means "first active
+   `partner_labs` row in the same region as the household," not a real
+   distance calculation.

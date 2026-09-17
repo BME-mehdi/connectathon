@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
     relation: "self",
     is_minor: false,
     date_of_birth: "1900-01-01", // placeholder — updated in screening form
+    email: user.email,
   });
 
   return NextResponse.json(data, { status: 201 });

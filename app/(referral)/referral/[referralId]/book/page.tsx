@@ -49,11 +49,17 @@ export default function BookAppointmentPage() {
     setLoading(true);
     setError(null);
 
-    // Update referral status to scheduled + create appointment record
+    // Either a plain reschedule (still request_sent) or a re-request after a
+    // missed appointment (no_show -> request_sent) — the server tells which
+    // one applies based on the referral's current status.
     const res = await fetch("/api/referral", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ referral_id: referralId, status: "scheduled" }),
+      body: JSON.stringify({
+        referral_id: referralId,
+        status: "request_sent",
+        scheduled_at: selected.toISOString(),
+      }),
     });
 
     if (!res.ok) {
@@ -78,7 +84,7 @@ export default function BookAppointmentPage() {
         <div className="bg-card rounded-2xl border border-border shadow-soft p-6">
           <h1 className="text-xl">Choisir un créneau</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Sélectionnez une date et heure pour votre test de confirmation à la pharmacie partenaire.
+            Sélectionnez une date et heure pour votre test de confirmation au laboratoire médical partenaire.
           </p>
         </div>
 

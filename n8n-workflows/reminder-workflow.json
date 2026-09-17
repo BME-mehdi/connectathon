@@ -1,22 +1,40 @@
 {
-  "name": "T2D: Daily Reminders",
+  "name": "T2D: Daily Reminders (optional — app now scores inline; see app/api/screening/route.ts)",
   "nodes": [
     {
-      "parameters": { "rule": { "interval": [{ "field": "cronExpression", "expression": "0 8 * * *" }] } },
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      },
       "id": "schedule",
       "name": "Daily 08:00",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [240, 300]
+      "position": [
+        240,
+        300
+      ]
     },
     {
       "parameters": {
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/appointments?scheduled_at=gt.{{ new Date().toISOString() }}&scheduled_at=lt.{{ new Date(Date.now()+86400000).toISOString() }}&confirmed_by_pharmacist_at=is.null&select=id,scheduled_at,referral_id",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/appointments?scheduled_at=gt.{{ new Date().toISOString() }}&scheduled_at=lt.{{ new Date(Date.now()+86400000).toISOString() }}&attended_at=is.null&select=id,scheduled_at,referral_id",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
-            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" }
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            }
           ]
         }
       },
@@ -24,7 +42,10 @@
       "name": "Fetch Upcoming Appointments",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [460, 300]
+      "position": [
+        460,
+        300
+      ]
     },
     {
       "parameters": {
@@ -34,14 +55,39 @@
       "name": "Send Reminders (Stub)",
       "type": "n8n-nodes-base.function",
       "typeVersion": 1,
-      "position": [680, 300]
+      "position": [
+        680,
+        300
+      ]
     }
   ],
   "connections": {
-    "Daily 08:00":                { "main": [[{ "node": "Fetch Upcoming Appointments", "type": "main", "index": 0 }]] },
-    "Fetch Upcoming Appointments":{ "main": [[{ "node": "Send Reminders (Stub)",       "type": "main", "index": 0 }]] }
+    "Daily 08:00": {
+      "main": [
+        [
+          {
+            "node": "Fetch Upcoming Appointments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Upcoming Appointments": {
+      "main": [
+        [
+          {
+            "node": "Send Reminders (Stub)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
   "active": true,
-  "settings": { "executionOrder": "v1" },
+  "settings": {
+    "executionOrder": "v1"
+  },
   "tags": []
 }

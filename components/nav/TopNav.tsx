@@ -18,7 +18,7 @@ const NAV_LINKS = [
   { href: "/onboarding/members", label: "Foyer" },
   { href: "/screening", label: "Dépistage" },
   { href: "/referral", label: "Orientations" },
-  { href: "/referral/pharmacist", label: "Laboratory Results" },
+  { href: "/referral/lab", label: "Laboratory Results" },
 ];
 
 export default function TopNav() {

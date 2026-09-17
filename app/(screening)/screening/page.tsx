@@ -1,15 +1,16 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { getMyHousehold } from "@/lib/household";
+import { RELATION_LABEL } from "@/components/family/FamilyTree";
 
 export default async function ScreeningIndexPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  // Get household & members
-  const { data: household } = await supabase
-    .from("households").select("id, name").eq("owner_user_id", user.id).single();
+  // Get household (owned, or joined via invite) & members
+  const household = await getMyHousehold(supabase, user.id);
   if (!household) redirect("/onboarding");
 
   const { data: allMembers } = await supabase
@@ -46,19 +47,27 @@ export default async function ScreeningIndexPage() {
           {adultMembers.length > 0 ? (
             <ul className="space-y-2">
               {adultMembers.map(member => (
-                <li key={member.id}>
-                  <Link
-                    href={`/screening/${member.id}`}
-                    className="flex items-center justify-between bg-card rounded-xl border border-border p-4 hover:border-accent hover:shadow-soft transition-all"
-                  >
-                    <div>
-                      <p className="font-medium text-foreground">{member.full_name}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{member.relation}</p>
-                    </div>
-                    <span className="text-primary bg-secondary px-3 py-1 rounded-lg text-xs font-medium hover:bg-secondary/70">
+                <li key={member.id} className="flex items-center justify-between gap-2 bg-card rounded-xl border border-border p-4 hover:border-accent hover:shadow-soft transition-all">
+                  <div>
+                    <p className="font-medium text-foreground">{member.full_name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {RELATION_LABEL[member.relation] ?? member.relation}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Link
+                      href={`/screening/${member.id}/history`}
+                      className="text-muted-foreground bg-muted px-3 py-1 rounded-lg text-xs font-medium hover:bg-muted/70"
+                    >
+                      Historique
+                    </Link>
+                    <Link
+                      href={`/screening/${member.id}`}
+                      className="text-primary bg-secondary px-3 py-1 rounded-lg text-xs font-medium hover:bg-secondary/70"
+                    >
                       Évaluer →
-                    </span>
-                  </Link>
+                    </Link>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -83,7 +92,9 @@ export default async function ScreeningIndexPage() {
                 >
                   <div>
                     <p className="font-medium text-foreground">{child.full_name}</p>
-                    <p className="text-xs text-muted-foreground capitalize">{child.relation}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {RELATION_LABEL[child.relation] ?? child.relation}
+                    </p>
                   </div>
                   <span className="text-xs bg-amber-50 border border-amber-200 text-amber-800 px-2.5 py-1 rounded-full font-medium">
                     Mineur (antécédents enregistrés)

@@ -2,18 +2,20 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { FamilyTree, RELATION_LABEL } from "@/components/family/FamilyTree";
+import { getMyHousehold } from "@/lib/household";
 
 export default async function MembersPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  const { data: household } = await supabase
-    .from("households").select("id, name").eq("owner_user_id", user.id).single();
+  // Owned household, or the one this user was invited into — either way,
+  // this is "their" family tree.
+  const household = await getMyHousehold(supabase, user.id);
   if (!household) redirect("/onboarding/create");
 
   const { data: members } = await supabase
-    .from("family_members").select("id, full_name, relation, is_minor").eq("household_id", household.id);
+    .from("family_members").select("id, full_name, relation, is_minor, email").eq("household_id", household.id);
 
   // The household owner's own row (relation: "self") is represented by the
   // "Vous" node in the tree / implicitly by the account — never list it
@@ -37,6 +39,7 @@ export default async function MembersPage() {
                     <p className="text-sm font-medium text-foreground">{m.full_name}</p>
                     <p className="text-xs text-muted-foreground">
                       {RELATION_LABEL[m.relation] ?? m.relation}{m.is_minor ? " · mineur" : ""}
+                      {m.email ? ` · ${m.email}` : ""}
                     </p>
                   </div>
                 </li>

@@ -1,13 +1,19 @@
 {
-  "name": "T2D: Scoring Workflow",
+  "name": "T2D: Scoring Workflow (optional — app now scores inline; see app/api/screening/route.ts)",
   "nodes": [
     {
-      "parameters": { "path": "scoring-trigger", "responseMode": "responseNode" },
+      "parameters": {
+        "path": "scoring-trigger",
+        "responseMode": "responseNode"
+      },
       "id": "webhook-trigger",
       "name": "Scoring Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [240, 300]
+      "position": [
+        240,
+        300
+      ]
     },
     {
       "parameters": {
@@ -15,8 +21,14 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
-            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" }
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            }
           ]
         }
       },
@@ -24,7 +36,10 @@
       "name": "Fetch Screening Response",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [460, 300]
+      "position": [
+        460,
+        300
+      ]
     },
     {
       "parameters": {
@@ -34,7 +49,10 @@
       "name": "Compute DIABSCORE",
       "type": "n8n-nodes-base.function",
       "typeVersion": 1,
-      "position": [680, 300]
+      "position": [
+        680,
+        300
+      ]
     },
     {
       "parameters": {
@@ -43,39 +61,85 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
-            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
-            { "name": "Prefer", "value": "return=representation" }
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
           ]
         },
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
-            { "name": "family_member_id",      "value": "={{ $json.family_member_id }}" },
-            { "name": "screening_response_id", "value": "={{ $json.screening_response_id }}" },
-            { "name": "score_value",           "value": "={{ $json.score_value }}" },
-            { "name": "tier",                  "value": "={{ $json.tier }}" },
-            { "name": "formula_version",       "value": "={{ $json.formula_version }}" },
-            { "name": "findrisc_bonus",        "value": "={{ $json.findrisc_bonus }}" }
+            {
+              "name": "family_member_id",
+              "value": "={{ $json.family_member_id }}"
+            },
+            {
+              "name": "screening_response_id",
+              "value": "={{ $json.screening_response_id }}"
+            },
+            {
+              "name": "score_value",
+              "value": "={{ $json.score_value }}"
+            },
+            {
+              "name": "tier",
+              "value": "={{ $json.tier }}"
+            },
+            {
+              "name": "formula_version",
+              "value": "={{ $json.formula_version }}"
+            },
+            {
+              "name": "findrisc_bonus",
+              "value": "={{ $json.findrisc_bonus }}"
+            }
           ]
         },
-        "options": { "response": { "response": { "responseFormat": "json" } } }
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
       },
       "id": "write-score",
       "name": "Write Risk Score",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [900, 300]
+      "position": [
+        900,
+        300
+      ]
     },
     {
       "parameters": {
-        "conditions": { "boolean": [{ "value1": "={{ $('Compute DIABSCORE').item.json.is_high_risk }}", "value2": true }] }
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $('Compute DIABSCORE').item.json.is_high_risk }}",
+              "value2": true
+            }
+          ]
+        }
       },
       "id": "if-high-risk",
       "name": "Is High Risk?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [1120, 300]
+      "position": [
+        1120,
+        300
+      ]
     },
     {
       "parameters": {
@@ -84,8 +148,14 @@
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
-            { "name": "family_member_id", "value": "={{ $('Compute DIABSCORE').item.json.family_member_id }}" },
-            { "name": "risk_score_id",    "value": "={{ $('Write Risk Score').item.json[0].id }}" }
+            {
+              "name": "family_member_id",
+              "value": "={{ $('Compute DIABSCORE').item.json.family_member_id }}"
+            },
+            {
+              "name": "risk_score_id",
+              "value": "={{ $('Write Risk Score').item.json[0].id }}"
+            }
           ]
         }
       },
@@ -93,26 +163,104 @@
       "name": "Trigger Referral Workflow",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1340, 200]
+      "position": [
+        1340,
+        200
+      ]
     },
     {
-      "parameters": { "respondWith": "json", "responseBody": "={ \"status\": \"scored\", \"tier\": \"{{ $('Compute DIABSCORE').item.json.tier }}\" }" },
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"status\": \"scored\", \"tier\": \"{{ $('Compute DIABSCORE').item.json.tier }}\" }"
+      },
       "id": "respond",
       "name": "Respond",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [1340, 400]
+      "position": [
+        1340,
+        400
+      ]
     }
   ],
   "connections": {
-    "Scoring Webhook":          { "main": [[{ "node": "Fetch Screening Response", "type": "main", "index": 0 }]] },
-    "Fetch Screening Response": { "main": [[{ "node": "Compute DIABSCORE",        "type": "main", "index": 0 }]] },
-    "Compute DIABSCORE":        { "main": [[{ "node": "Write Risk Score",          "type": "main", "index": 0 }]] },
-    "Write Risk Score":         { "main": [[{ "node": "Is High Risk?",             "type": "main", "index": 0 }]] },
-    "Is High Risk?":            { "main": [[{ "node": "Trigger Referral Workflow", "type": "main", "index": 0 }], [{ "node": "Respond", "type": "main", "index": 0 }]] },
-    "Trigger Referral Workflow":{ "main": [[{ "node": "Respond",                  "type": "main", "index": 0 }]] }
+    "Scoring Webhook": {
+      "main": [
+        [
+          {
+            "node": "Fetch Screening Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Screening Response": {
+      "main": [
+        [
+          {
+            "node": "Compute DIABSCORE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute DIABSCORE": {
+      "main": [
+        [
+          {
+            "node": "Write Risk Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Risk Score": {
+      "main": [
+        [
+          {
+            "node": "Is High Risk?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is High Risk?": {
+      "main": [
+        [
+          {
+            "node": "Trigger Referral Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Referral Workflow": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
   "active": true,
-  "settings": { "executionOrder": "v1" },
+  "settings": {
+    "executionOrder": "v1"
+  },
   "tags": []
 }
