@@ -22,7 +22,7 @@ export const FamilyMemberSchema = z.object({
   is_minor:       z.boolean(),
   date_of_birth:  z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD"),
   biological_sex: z.enum(["male", "female", "prefer_not_to_say"]).optional(),
-  email:          z.string().email("Invalid email"),
+  email:          z.string().email("Invalid email").optional().or(z.literal("")).nullable(),
 });
 export type FamilyMember = z.infer<typeof FamilyMemberSchema>;
 

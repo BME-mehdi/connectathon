@@ -33,7 +33,6 @@ export async function POST(req: NextRequest) {
       is_minor:       parsed.data.is_minor,
       date_of_birth:  parsed.data.date_of_birth,
       biological_sex: parsed.data.biological_sex ?? null,
-      email:          parsed.data.email,
       // user_id stays null for minors and uninvited members
     })
     .select()
@@ -69,7 +68,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await supabase
     .from("family_members")
-    .select("id, full_name, relation, is_minor, date_of_birth, biological_sex, email")
+    .select("id, full_name, relation, is_minor, date_of_birth, biological_sex")
     .eq("household_id", household.id)
     .order("created_at", { ascending: true });
 

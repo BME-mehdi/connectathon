@@ -53,7 +53,6 @@ export async function POST(req: NextRequest) {
       is_minor: false,
       date_of_birth: parsed.data.date_of_birth,
       biological_sex: parsed.data.biological_sex ?? null,
-      email: user.email,
     })
     .select("id")
     .single();
