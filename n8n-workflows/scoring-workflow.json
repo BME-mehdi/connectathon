@@ -1,0 +1,115 @@
+// n8n Scoring Workflow — T2D Screening Platform
+// Import this file via n8n UI: Settings → Import from File
+// Webhook path: POST /webhook/scoring-trigger
+// Expected body: { screening_response_id: string }
+//
+// IMPORTANT: The JS scoring logic in "Compute DIABSCORE" node MUST stay
+// identical to lib/scoring/diabscore.ts. If the formula changes,
+// increment FORMULA_VERSION in BOTH files.
+{
+  "name": "T2D: Scoring Workflow",
+  "nodes": [
+    {
+      "parameters": { "path": "scoring-trigger", "responseMode": "responseNode" },
+      "id": "webhook-trigger",
+      "name": "Scoring Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/screening_responses?id=eq.{{ $json.screening_response_id }}&select=*",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth"
+      },
+      "id": "fetch-screening",
+      "name": "Fetch Screening Response",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// DIABSCORE — formula_version: diabscore-v1.0\n// MUST match lib/scoring/diabscore.ts\nconst FORMULA_VERSION = 'diabscore-v1.0';\nconst r = $input.all()[0].json[0];\nif (!r) throw new Error('Screening response not found');\n\nconst wHtR = parseFloat(r.waist_cm) / parseFloat(r.height_cm);\nconst whtr_points = Math.round(wHtR * 100 * 10) / 10;\nlet core = parseInt(r.age) + whtr_points;\nif (r.family_history_t2d) core += 10;\nif (r.gestational_diabetes_history === true) core += 25;\n\nlet bonus = 0;\nif (r.activity_level === 'low') bonus += 5;\nif (r.diet_score != null && r.diet_score <= 2) bonus += 3;\nif (r.bp_medication === true) bonus += 5;\n\nconst total = core + bonus;\nconst tier = total >= 90 ? 'high' : total >= 80 ? 'moderate' : 'low';\n\nreturn [{ json: { family_member_id: r.family_member_id, screening_response_id: r.id, score_value: total, tier, formula_version: FORMULA_VERSION, findrisc_bonus: bonus > 0 ? bonus : null, is_high_risk: tier === 'high' } }];"
+      },
+      "id": "compute-score",
+      "name": "Compute DIABSCORE",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/risk_scores",
+        "method": "POST",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "family_member_id",      "value": "={{ $json.family_member_id }}" },
+            { "name": "screening_response_id", "value": "={{ $json.screening_response_id }}" },
+            { "name": "score_value",           "value": "={{ $json.score_value }}" },
+            { "name": "tier",                  "value": "={{ $json.tier }}" },
+            { "name": "formula_version",       "value": "={{ $json.formula_version }}" },
+            { "name": "findrisc_bonus",        "value": "={{ $json.findrisc_bonus }}" }
+          ]
+        },
+        "options": { "response": { "response": { "responseFormat": "json" } } }
+      },
+      "id": "write-score",
+      "name": "Write Risk Score",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "conditions": { "boolean": [{ "value1": "={{ $('Compute DIABSCORE').item.json.is_high_risk }}", "value2": true }] }
+      },
+      "id": "if-high-risk",
+      "name": "Is High Risk?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.N8N_WEBHOOK_BASE_URL }}/referral-trigger",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "family_member_id", "value": "={{ $('Compute DIABSCORE').item.json.family_member_id }}" },
+            { "name": "risk_score_id",    "value": "={{ $('Write Risk Score').item.json[0].id }}" }
+          ]
+        }
+      },
+      "id": "trigger-referral",
+      "name": "Trigger Referral Workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 200]
+    },
+    {
+      "parameters": { "respondWith": "json", "responseBody": "={ \"status\": \"scored\", \"tier\": \"{{ $('Compute DIABSCORE').item.json.tier }}\" }" },
+      "id": "respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1340, 400]
+    }
+  ],
+  "connections": {
+    "Scoring Webhook":          { "main": [[{ "node": "Fetch Screening Response", "type": "main", "index": 0 }]] },
+    "Fetch Screening Response": { "main": [[{ "node": "Compute DIABSCORE",        "type": "main", "index": 0 }]] },
+    "Compute DIABSCORE":        { "main": [[{ "node": "Write Risk Score",          "type": "main", "index": 0 }]] },
+    "Write Risk Score":         { "main": [[{ "node": "Is High Risk?",             "type": "main", "index": 0 }]] },
+    "Is High Risk?":            { "main": [[{ "node": "Trigger Referral Workflow", "type": "main", "index": 0 }], [{ "node": "Respond", "type": "main", "index": 0 }]] },
+    "Trigger Referral Workflow":{ "main": [[{ "node": "Respond",                  "type": "main", "index": 0 }]] }
+  },
+  "active": true,
+  "settings": { "executionOrder": "v1" },
+  "tags": ["t2d-screening", "scoring"]
+}

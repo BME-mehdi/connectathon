@@ -1,0 +1,92 @@
+// n8n Referral Workflow — T2D Screening Platform
+// Triggered by the Scoring Workflow when tier === 'high'
+// Webhook path: POST /webhook/referral-trigger
+// Expected body: { family_member_id: string, risk_score_id: string }
+{
+  "name": "T2D: Referral Workflow",
+  "nodes": [
+    {
+      "parameters": { "path": "referral-trigger", "responseMode": "responseNode" },
+      "id": "referral-webhook",
+      "name": "Referral Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/family_members?id=eq.{{ $json.family_member_id }}&select=*,households(region)",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth"
+      },
+      "id": "fetch-member",
+      "name": "Fetch Member & Region",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/partner_pharmacies?region=eq.{{ $json[0].households.region }}&is_active=eq.true&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth"
+      },
+      "id": "find-pharmacy",
+      "name": "Find Nearest Pharmacy",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/referrals",
+        "method": "POST",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "family_member_id", "value": "={{ $('Referral Webhook').item.json.family_member_id }}" },
+            { "name": "risk_score_id",    "value": "={{ $('Referral Webhook').item.json.risk_score_id }}" },
+            { "name": "pharmacy_id",      "value": "={{ $json[0].id }}" },
+            { "name": "status",           "value": "flagged" }
+          ]
+        },
+        "options": { "response": { "response": { "responseFormat": "json" } } }
+      },
+      "id": "create-referral",
+      "name": "Create Referral",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Stub: replace with Twilio/Infobip/email in production\nconst member = $('Fetch Member & Region').item.json[0];\nconst referral = $('Create Referral').item.json[0];\nconsole.log('[NOTIFICATION STUB]', { to: member.full_name, type: 'high_risk_referral_created', referral_id: referral.id });\nreturn [{ json: { notified: true, channel: 'stub' } }];"
+      },
+      "id": "notify",
+      "name": "Send Notification (Stub)",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": { "respondWith": "json", "responseBody": "={ \"status\": \"referral_created\" }" },
+      "id": "respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1340, 300]
+    }
+  ],
+  "connections": {
+    "Referral Webhook":   { "main": [[{ "node": "Fetch Member & Region", "type": "main", "index": 0 }]] },
+    "Fetch Member & Region": { "main": [[{ "node": "Find Nearest Pharmacy", "type": "main", "index": 0 }]] },
+    "Find Nearest Pharmacy": { "main": [[{ "node": "Create Referral",       "type": "main", "index": 0 }]] },
+    "Create Referral":    { "main": [[{ "node": "Send Notification (Stub)", "type": "main", "index": 0 }]] },
+    "Send Notification (Stub)": { "main": [[{ "node": "Respond",            "type": "main", "index": 0 }]] }
+  },
+  "active": true,
+  "settings": { "executionOrder": "v1" },
+  "tags": ["t2d-screening", "referral"]
+}

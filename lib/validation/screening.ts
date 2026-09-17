@@ -39,25 +39,25 @@ export const DiabscoreCoreSchema = z.object({
   family_member_id: z.string().uuid("Invalid member ID"),
 
   age: z
-    .number({ required_error: "Age is required" })
+    .number({ error: "Age is required" })
     .int("Age must be a whole number")
     .min(18, "Age must be at least 18")
     .max(120, "Please check the age entered"),
 
   waist_cm: z
-    .number({ required_error: "Waist measurement is required" })
+    .number({ error: "Waist measurement is required" })
     .positive()
     .min(40,  "Waist seems too low — please re-measure")
     .max(250, "Waist seems too high — please re-measure"),
 
   height_cm: z
-    .number({ required_error: "Height is required" })
+    .number({ error: "Height is required" })
     .positive()
     .min(80,  "Height seems too low — please re-measure")
     .max(280, "Height seems too high — please re-measure"),
 
   family_history_t2d: z.boolean({
-    required_error: "Please indicate family history of Type 2 Diabetes",
+    error: "Please indicate family history of Type 2 Diabetes",
   }),
 
   gestational_diabetes_history: z.boolean().nullable().optional(),

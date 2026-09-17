@@ -1,0 +1,85 @@
+{
+  "auth": {
+    "login": "Connexion",
+    "login_description": "Plateforme de dépistage familial du diabète de type 2",
+    "email_label": "Adresse email",
+    "email_placeholder": "vous@exemple.com",
+    "send_link": "Envoyer le lien de connexion",
+    "sending": "Envoi…",
+    "check_email": "Vérifiez votre email",
+    "check_email_description": "Un lien de connexion a été envoyé à"
+  },
+  "onboarding": {
+    "create_household": "Créer votre foyer",
+    "household_name": "Nom du foyer",
+    "region": "Gouvernorat",
+    "create": "Créer le foyer",
+    "creating": "Création…",
+    "members_title": "Membres du foyer",
+    "add_member": "+ Ajouter un membre",
+    "invite_adult": "Inviter un adulte",
+    "start_screening": "Commencer le dépistage →",
+    "invite_title": "Inviter un adulte",
+    "invite_description": "Chaque adulte confirme lui-même son compte et son consentement avant que ses propres informations ne soient saisies.",
+    "invite_send": "Envoyer l'invitation",
+    "invite_sent_title": "Invitation envoyée",
+    "accept_title": "Rejoindre le foyer",
+    "accept_consent_notice": "En continuant, vous consentez vous-même à la collecte de vos propres données de dépistage — ce consentement n'est donné par personne d'autre à votre place.",
+    "accept_confirm": "Confirmer et rejoindre",
+    "add_minor_title": "Ajouter un enfant mineur",
+    "add_minor_description": "Aucune donnée de santé personnelle n'est collectée pour un mineur — uniquement son identité, à titre informatif pour le foyer.",
+    "add_minor_consent_notice": "En ajoutant un enfant mineur, vous confirmez agir en tant que tuteur légal et donnez votre consentement pour son inclusion dans le foyer.",
+    "add_minor_submit": "Ajouter l'enfant"
+  },
+  "screening": {
+    "title": "Questionnaire DIABSCORE",
+    "subtitle": "Outil de dépistage validé pour la population tunisienne",
+    "age": "Âge (années)",
+    "waist": "Tour de taille (cm)",
+    "height": "Taille (cm)",
+    "family_history": "Antécédents familiaux de diabète de type 2 ?",
+    "gdm": "Antécédents de diabète gestationnel ?",
+    "gdm_women": "(femmes)",
+    "yes": "Oui",
+    "no": "Non",
+    "na": "N/A",
+    "findrisc_title": "Évaluation approfondie (optionnel)",
+    "findrisc_subtitle": "FINDRISC-lite — pour un score plus précis",
+    "activity": "Activité physique",
+    "activity_high": "Élevée",
+    "activity_moderate": "Modérée",
+    "activity_low": "Faible",
+    "diet": "Alimentation (1=mauvaise, 5=excellente)",
+    "bp_medication": "Traitement antihypertenseur ?",
+    "submit": "Calculer mon score →",
+    "calculating": "Calcul du score en cours…"
+  },
+  "result": {
+    "disclaimer": "Ce résultat est un indicateur de risque, pas un diagnostic médical. Seul un professionnel de santé peut établir un diagnostic après des examens cliniques appropriés.",
+    "low": "Faible risque",
+    "moderate": "Risque modéré",
+    "high": "Risque élevé",
+    "explanation_low": "Votre score indique un risque faible de diabète de type 2 non diagnostiqué. Maintenez de bonnes habitudes de vie et refaites le dépistage dans 12 mois.",
+    "explanation_moderate": "Votre score indique un risque modéré. Il est recommandé de consulter un professionnel de santé pour un suivi et d'adopter des mesures préventives.",
+    "explanation_high": "Votre score indique un risque élevé. Nous vous orientons vers un test de confirmation auprès d'une pharmacie partenaire.",
+    "see_appointment": "Voir mon rendez-vous →",
+    "back": "← Retour aux membres",
+    "formula_version": "Formule"
+  },
+  "referral": {
+    "title": "Mes orientations",
+    "subtitle": "Suivi des tests de confirmation en pharmacie partenaire",
+    "no_referrals": "Aucune orientation pour l'instant."
+  },
+  "dashboard": {
+    "title": "Tableau de bord CNAM / Assureur",
+    "subtitle": "Données agrégées uniquement · Aucune donnée individuelle accessible",
+    "aggregate_note": "Données agrégées · Vue matérialisée rafraîchie quotidiennement · Aucun enregistrement individuel"
+  },
+  "companion": {
+    "title": "Assistant santé (bêta)",
+    "subtitle": "Conseil de mode de vie · Pas de diagnostic",
+    "placeholder": "Votre question…",
+    "empty_state": "Posez une question sur l'alimentation, l'activité physique ou la gestion du stress."
+  }
+}

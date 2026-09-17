@@ -1,0 +1,21 @@
+{
+  "_note": "Arabic translation keys — content to be completed by the clinical/localization team",
+  "auth": {
+    "login": "تسجيل الدخول",
+    "email_label": "البريد الإلكتروني",
+    "send_link": "إرسال رابط الدخول"
+  },
+  "screening": {
+    "title": "استبيان DIABSCORE",
+    "yes": "نعم",
+    "no": "لا",
+    "na": "غير منطبق",
+    "submit": "احسب نتيجتي ←"
+  },
+  "result": {
+    "disclaimer": "هذه النتيجة مؤشر للخطر وليست تشخيصاً طبياً. يجب على متخصص صحي وحده إجراء التشخيص.",
+    "low": "خطر منخفض",
+    "moderate": "خطر معتدل",
+    "high": "خطر مرتفع"
+  }
+}

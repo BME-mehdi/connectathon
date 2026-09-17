@@ -1,0 +1,45 @@
+// n8n Reminder Workflow — T2D Screening Platform
+// Runs daily at 08:00 Africa/Tunis
+// Sends appointment reminders (24h ahead) — stub, wire Twilio/email for production
+{
+  "name": "T2D: Daily Reminders",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "field": "cronExpression", "expression": "0 8 * * *" }] } },
+      "id": "schedule",
+      "name": "Daily 08:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/appointments?scheduled_at=gt.{{ new Date().toISOString() }}&scheduled_at=lt.{{ new Date(Date.now()+86400000).toISOString() }}&confirmed_by_pharmacist_at=is.null&select=id,scheduled_at,referral_id",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth"
+      },
+      "id": "fetch-upcoming",
+      "name": "Fetch Upcoming Appointments",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Stub: wire real SMS/email here\nconst apts = $input.all();\nfor (const a of apts) {\n  console.log('[REMINDER STUB]', { appointment_id: a.json.id, scheduled_at: a.json.scheduled_at, message: 'Your T2D blood test appointment is tomorrow.' });\n}\nreturn [{ json: { reminders_sent: apts.length } }];"
+      },
+      "id": "send-reminders",
+      "name": "Send Reminders (Stub)",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [680, 300]
+    }
+  ],
+  "connections": {
+    "Daily 08:00":                { "main": [[{ "node": "Fetch Upcoming Appointments", "type": "main", "index": 0 }]] },
+    "Fetch Upcoming Appointments":{ "main": [[{ "node": "Send Reminders (Stub)",       "type": "main", "index": 0 }]] }
+  },
+  "active": true,
+  "settings": { "executionOrder": "v1" },
+  "tags": ["t2d-screening", "reminders"]
+}
