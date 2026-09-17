@@ -15,37 +15,63 @@ export default async function MembersPage() {
   if (!household) redirect("/onboarding/create");
 
   const { data: members } = await supabase
-    .from("family_members").select("id, full_name, relation, is_minor, email").eq("household_id", household.id);
+    .from("family_members")
+    .select("id, full_name, relation, is_minor")
+    .eq("household_id", household.id)
+    .order("created_at", { ascending: true });
 
-  // The household owner's own row (relation: "self") is represented by the
-  // "Vous" node in the tree / implicitly by the account — never list it
-  // again as a separate member, or it would appear twice.
+  const selfMember = members?.find(m => m.relation === "self");
   const otherMembers = members?.filter(m => m.relation !== "self") ?? [];
 
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-lg mx-auto space-y-6">
         <div className="bg-card rounded-2xl border border-border shadow-soft p-6 space-y-4">
-          <h1 className="text-xl">Membres du foyer</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl">Membres du foyer</h1>
+            <span className="text-xs bg-muted text-muted-foreground px-2.5 py-1 rounded-full font-medium">
+              {household.region}
+            </span>
+          </div>
           <p className="text-muted-foreground text-sm">
-            Ajoutez chaque membre adulte qui souhaite participer au dépistage.
+            Composition du foyer pour l'évaluation du risque familial de diabète.
           </p>
 
-          {otherMembers.length > 0 && (
-            <ul className="divide-y divide-border">
-              {otherMembers.map(m => (
-                <li key={m.id} className="py-3 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{m.full_name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {RELATION_LABEL[m.relation] ?? m.relation}{m.is_minor ? " · mineur" : ""}
-                      {m.email ? ` · ${m.email}` : ""}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+          <ul className="divide-y divide-border">
+            {/* Chef du foyer */}
+            <li className="py-3 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  {selfMember?.full_name ?? user.email ?? "Vous"}
+                </p>
+                <p className="text-xs text-muted-foreground">Titulaire du compte · Vous</p>
+              </div>
+              <span className="text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-medium">
+                Chef de foyer
+              </span>
+            </li>
+
+            {/* Autres membres */}
+            {otherMembers.map(m => (
+              <li key={m.id} className="py-3 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-foreground">{m.full_name}</p>
+                  <p className="text-xs text-muted-foreground capitalize">
+                    {RELATION_LABEL[m.relation] ?? m.relation}
+                  </p>
+                </div>
+                {m.is_minor ? (
+                  <span className="text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full font-medium">
+                    Mineur
+                  </span>
+                ) : (
+                  <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-medium">
+                    Adulte
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
 
           <div className="flex gap-3 pt-2">
             <Link

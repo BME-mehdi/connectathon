@@ -3,6 +3,7 @@ import { League_Spartan, Amaranth } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import TopNav from "@/components/nav/TopNav";
+import CompanionPanel from "@/components/companion/CompanionPanel";
 
 const leagueSpartan = League_Spartan({
   subsets: ["latin"],
@@ -35,6 +36,7 @@ export default function RootLayout({
       <body className="antialiased">
         <TopNav />
         {children}
+        <CompanionPanel />
       </body>
     </html>
   );

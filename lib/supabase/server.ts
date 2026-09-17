@@ -3,10 +3,12 @@ import { cookies } from "next/headers";
 
 export async function createClient() {
   const cookieStore = await cookies();
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-key";
 
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    url,
+    key,
     {
       cookies: {
         getAll() {
@@ -32,9 +34,12 @@ export async function createClient() {
  * or in migration scripts. Never expose to the browser.
  */
 export function createServiceClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || "placeholder-service-key";
+
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    url,
+    key,
     { cookies: { getAll: () => [], setAll: () => {} } }
   );
 }

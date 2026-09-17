@@ -1,7 +1,11 @@
 # Companion Service API Contract
 
-This document defines the integration surface between the T2D Screening Platform
-and the external WHO-companion lifestyle assistant (built by the companion team).
+This document defines the integration surface for the WHO-grounded lifestyle
+companion — a chat button/panel available across the app
+(`components/companion/CompanionPanel.tsx`), backed by a local Ollama
+instance running `medgemma`.
+
+Implementation: [`app/api/companion/message/route.ts`](app/api/companion/message/route.ts).
 
 ---
 
@@ -11,9 +15,8 @@ and the external WHO-companion lifestyle assistant (built by the companion team)
 POST /api/companion/message
 ```
 
-The platform's stub implementation lives in
-[`app/api/companion/message/route.ts`](app/api/companion/message/route.ts).
-The companion team replaces the stub body with a real call to their service.
+Requires an authenticated session (same cookie-based auth as every other
+route) — a logged-out request gets `401`.
 
 ---
 
@@ -21,44 +24,65 @@ The companion team replaces the stub body with a real call to their service.
 
 ```json
 {
-  "message": "string",        // User's natural-language question
-  "household_id": "uuid",     // For session context (no individual clinical data sent)
-  "locale": "fr" | "ar"       // UI locale
+  "message": "string",                         // User's latest message
+  "history": [                                  // Optional — prior turns, most recent last
+    { "role": "user" | "assistant", "content": "string" }
+  ]
 }
 ```
 
-> ⚠️ **Data firewall note**: Individual screening scores, risk tiers, or family member records
-> MUST NOT be forwarded to the companion service. The companion receives only the user's
-> freeform text message and a household_id for session continuity.
+`history` is capped server-side to the last 12 messages before being sent to
+the model. It's kept client-side only — there's no server-side chat session.
+
+> ⚠️ **Data firewall note**: Individual screening scores, risk tiers, or family
+> member records MUST NOT be forwarded to the companion. Only the free-text
+> conversation is sent. This is enforced by construction: nothing in
+> `app/api/companion/` reads from `risk_scores`, `screening_responses`, or
+> `family_members`.
 
 ---
 
 ## Response
 
+Success (`200`):
 ```json
-{
-  "reply": "string",          // Markdown-safe plain text (no HTML)
-  "sources": ["string"]       // Optional: citation URLs or document titles
-}
+{ "reply": "string" }
 ```
+
+Ollama unreachable, errored, or returned an empty response (`503`):
+```json
+{ "error": "string" }
+```
+`CompanionPanel` shows this (or a local fallback string) as the assistant's
+message rather than failing silently.
 
 ---
 
 ## Constraints (non-negotiable)
 
-1. The companion service must **never generate a risk tier, diagnosis, or medication advice**.
-   Its scope is lifestyle guidance (diet, activity, stress management) grounded in WHO resources.
-2. All responses must include an implicit or explicit disclaimer that they are not clinical advice.
-3. Latency target: < 5 seconds (UI shows typing indicator while waiting).
-4. If the service is unavailable, return HTTP 503 — the platform will show a graceful fallback message.
+1. The companion must **never generate a risk tier, diagnosis, or medication
+   advice**. Its scope is lifestyle guidance (diet, activity, stress
+   management), grounded in WHO-style guidance — enforced via the system
+   prompt in `app/api/companion/message/route.ts`, not left to the model's
+   judgment.
+2. Every response should include an implicit or explicit reminder that it is
+   not clinical advice, and should point to a clinician for anything
+   concerning.
+3. Requests to Ollama time out at 30s; on timeout, error, or an empty
+   response the route returns `503` rather than hanging or crashing.
 
 ---
 
-## Stub response (current)
+## Running it
 
-```json
-{
-  "reply": "Le service d'accompagnement est en cours de finalisation. En attendant, consultez votre médecin ou pharmacien pour toute question de santé.",
-  "sources": []
-}
+Ollama itself is not part of this repo. Start it locally with `medgemma`
+pulled, then set in `.env.local` (defaults already match a stock local
+install):
+
 ```
+OLLAMA_BASE_URL=http://127.0.0.1:11434
+OLLAMA_MODEL=medgemma
+```
+
+If your local model tag differs (e.g. a specific quantization or version
+suffix from `ollama list`), set `OLLAMA_MODEL` to match exactly.

@@ -110,7 +110,7 @@ shape without duplicating it.
 | **Onboarding & consent** | `app/(onboarding)/`, `app/(auth)/`, `app/auth/`, `app/api/households`, `app/api/invite/*`, `app/api/members` | Household creation, adult invite + self-consent, guardian-added minors, the family tree | Layered consent (self / guardian / surface-level) must never be conflated |
 | **Screening & scoring** | `app/(screening)/`, `app/api/screening`, `app/api/scoring-webhook`, `lib/scoring/`, `lib/validation/screening.ts` | The DIABSCORE questionnaire, non-diagnostic result display, per-member evaluation history, and — since scoring is now computed inline — the auto lab-referral that follows a high-risk score | **Deterministic, versioned scoring** — never an LLM |
 | **Referral & scheduling** | `app/(referral)/`, `app/api/referral/*`, `lib/referral/`, `components/referral/`, `n8n-workflows/referral-workflow.json` (optional), `n8n-workflows/reminder-workflow.json` (optional) | Lab assignment, appointment scheduling/reschedule, lab attendance marking, lab result entry | `results_ready` is lab-only, never automated |
-| **Companion (stub)** | `app/api/companion/`, `components/companion/`, `COMPANION_API_CONTRACT.md` | The integration seam only — no prompting/model logic lives here | Never receives individual scores or clinical data |
+| **Companion** | `app/api/companion/`, `components/companion/`, `COMPANION_API_CONTRACT.md` | The chat button/panel + the local Ollama/medgemma call and its system prompt (§8) | Never receives individual scores or clinical data |
 | **Shared foundation** | `lib/supabase/`, `lib/validation/`, `lib/household.ts`, `components/ui/`, `supabase/migrations/` | Auth clients, household resolution (owner-or-member), Zod schemas used by 2+ modules, shadcn primitives, schema + RLS | Both non-negotiables are ultimately enforced here |
 
 > The CNAM/insurer payer dashboard (`app/(dashboard-payer)/`) has been removed
@@ -372,17 +372,25 @@ grant to insert a member on someone else's behalf).
 
 ---
 
-## 8. Companion integration surface — the one deliberate seam
+## 8. Companion — local Ollama + medgemma
 
-The WHO-grounded lifestyle companion is being built by a separate team. This
-repo owns only:
-- `components/companion/CompanionPanel.tsx` — the chat UI
-- `app/api/companion/message/route.ts` — a stub that returns a placeholder
-- `COMPANION_API_CONTRACT.md` — the agreed request/response shape
+The WHO-grounded lifestyle companion is a chat button/panel
+(`components/companion/CompanionPanel.tsx`, mounted globally in
+`app/layout.tsx`) backed by `app/api/companion/message/route.ts`, which calls
+a local Ollama instance running `medgemma` (`POST {OLLAMA_BASE_URL}/api/chat`,
+non-streaming). Ollama itself isn't part of this repo — it's expected to
+already be running locally with the model pulled.
 
-No prompting, knowledge base, or model logic for the companion lives here by
-design. When the other team's service is ready, only the stub's fetch target
-changes.
+Its scope is enforced by a system prompt, not by trusting the model: never a
+diagnosis, never a medication recommendation, never asked to interpret an
+individual's score (none is ever sent to it — see the data-firewall note in
+`COMPANION_API_CONTRACT.md`), always pointing to a clinician for anything
+concerning. If Ollama is unreachable or returns an error, the route responds
+`503` and the panel shows a fallback message instead of failing silently.
+
+Conversation history is kept client-side in `CompanionPanel` and resent with
+each request (capped server-side to the last 12 messages) — there's no
+server-side chat session or persistence.
 
 ---
 
@@ -397,7 +405,8 @@ SUPABASE_SERVICE_ROLE_KEY         # server-only — used for invite-accept and n
 NEXT_PUBLIC_SITE_URL              # for building absolute redirect URLs
 N8N_WEBHOOK_BASE_URL              # e.g. http://localhost:5678/webhook — optional, see §10
 SCORING_WEBHOOK_SECRET            # required header value for POST /api/scoring-webhook
-COMPANION_SERVICE_URL             # unset = stub response
+OLLAMA_BASE_URL                   # local Ollama instance, e.g. http://127.0.0.1:11434
+OLLAMA_MODEL                      # model tag to call, e.g. medgemma
 ```
 
 ---
@@ -504,8 +513,11 @@ done versus what's demo-shaped:
    (no live polling for the async score — no longer needed, scoring is now
    synchronous; no reveal animation; no locale switching — `messages/fr.json`
    is kept current by hand, `messages/ar.json` is still a skeleton).
-6. `CompanionPanel.tsx` sends `{ message }` only; `COMPANION_API_CONTRACT.md`
-   specifies `{ message, household_id, locale }`.
+6. ~~Companion was a stub.~~ Implemented — chat panel mounted globally,
+   backed by a local Ollama/medgemma call (§8). It doesn't send
+   `household_id`/`locale` the way the original stub contract sketched (there's
+   no other team's service to match anymore); `COMPANION_API_CONTRACT.md` is
+   updated to describe what's actually implemented.
 7. **Scoring no longer depends on n8n** — `/api/screening` computes the
    DIABSCORE result and auto-creates the lab referral inline
    (`app/api/screening/route.ts`), using the same formula the n8n workflows
