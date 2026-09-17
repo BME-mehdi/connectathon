@@ -1,0 +1,93 @@
+import { z } from "zod";
+
+/**
+ * Shared Zod schemas — used by both the React form (react-hook-form)
+ * and the API route for server-side validation. Single source of truth.
+ */
+
+// ── Household ──────────────────────────────────────────────────────────────────
+
+export const HouseholdCreateSchema = z.object({
+  name:   z.string().min(1, "Household name is required").max(100),
+  region: z.string().min(1, "Region / governorate is required"),
+});
+export type HouseholdCreate = z.infer<typeof HouseholdCreateSchema>;
+
+// ── Family member ──────────────────────────────────────────────────────────────
+
+export const FamilyMemberSchema = z.object({
+  household_id:   z.string().uuid(),
+  full_name:      z.string().min(1, "Name is required").max(100),
+  relation:       z.enum(["self", "spouse", "child", "parent", "sibling", "other"]),
+  is_minor:       z.boolean(),
+  date_of_birth:  z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD"),
+  biological_sex: z.enum(["male", "female", "prefer_not_to_say"]).optional(),
+});
+export type FamilyMember = z.infer<typeof FamilyMemberSchema>;
+
+// ── Consent ───────────────────────────────────────────────────────────────────
+
+export const ConsentSchema = z.object({
+  family_member_id: z.string().uuid(),
+  consent_type:     z.enum(["self", "guardian", "surface_family_history"]),
+});
+export type ConsentInput = z.infer<typeof ConsentSchema>;
+
+// ── Screening — DIABSCORE core ────────────────────────────────────────────────
+
+export const DiabscoreCoreSchema = z.object({
+  family_member_id: z.string().uuid("Invalid member ID"),
+
+  age: z
+    .number({ required_error: "Age is required" })
+    .int("Age must be a whole number")
+    .min(18, "Age must be at least 18")
+    .max(120, "Please check the age entered"),
+
+  waist_cm: z
+    .number({ required_error: "Waist measurement is required" })
+    .positive()
+    .min(40,  "Waist seems too low — please re-measure")
+    .max(250, "Waist seems too high — please re-measure"),
+
+  height_cm: z
+    .number({ required_error: "Height is required" })
+    .positive()
+    .min(80,  "Height seems too low — please re-measure")
+    .max(280, "Height seems too high — please re-measure"),
+
+  family_history_t2d: z.boolean({
+    required_error: "Please indicate family history of Type 2 Diabetes",
+  }),
+
+  gestational_diabetes_history: z.boolean().nullable().optional(),
+});
+
+// ── Screening — FINDRISC-lite optional extension ──────────────────────────────
+
+export const FindriscLiteSchema = z.object({
+  activity_level: z.enum(["high", "moderate", "low"]).nullable().optional(),
+  diet_score:     z.number().int().min(1).max(5).nullable().optional(),
+  bp_medication:  z.boolean().nullable().optional(),
+});
+
+// ── Full submission (core + optional FINDRISC) ────────────────────────────────
+
+export const ScreeningSubmissionSchema = DiabscoreCoreSchema.merge(FindriscLiteSchema);
+export type ScreeningSubmission = z.infer<typeof ScreeningSubmissionSchema>;
+export type DiabscoreCore      = z.infer<typeof DiabscoreCoreSchema>;
+export type FindriscLite       = z.infer<typeof FindriscLiteSchema>;
+
+// ── Referral state transition ─────────────────────────────────────────────────
+
+export const REFERRAL_STATUSES = [
+  "flagged", "scheduled", "completed", "no_show", "physician_confirmed",
+] as const;
+
+export type ReferralStatus = typeof REFERRAL_STATUSES[number];
+
+export const ReferralUpdateSchema = z.object({
+  referral_id: z.string().uuid(),
+  status:      z.enum(REFERRAL_STATUSES),
+});
+export type ReferralUpdate = z.infer<typeof ReferralUpdateSchema>;
