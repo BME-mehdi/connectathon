@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "crypto";
 import { createServiceClient } from "@/lib/supabase/server";
-import { computeDiabscore, FORMULA_VERSION } from "@/lib/scoring";
+import { computeDiabscore, FORMULA_VERSION, type DiabscoreInputs } from "@/lib/scoring";
 import { z } from "zod";
 
 // This route is called by n8n OR directly for testing.
@@ -52,7 +52,9 @@ export async function POST(req: NextRequest) {
     height_cm: response.height_cm,
     family_history_t2d: response.family_history_t2d,
     gestational_diabetes_history: response.gestational_diabetes_history,
-    activity_level: response.activity_level,
+    // DB-constrained to exactly these values (001_initial_schema.sql CHECK),
+    // but gen-types keeps CHECK-constrained TEXT columns as plain `string`.
+    activity_level: response.activity_level as DiabscoreInputs["activity_level"],
     diet_score: response.diet_score,
     bp_medication: response.bp_medication,
   });

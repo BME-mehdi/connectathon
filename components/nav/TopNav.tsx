@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Activity, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +21,14 @@ const NAV_LINKS = [
   { href: "/referral", label: "Orientations" },
   { href: "/referral/lab", label: "Laboratory Results" },
 ];
+
+function Logo() {
+  return (
+    <span className="flex items-center gap-2">
+      <Image src="/logo.jpeg" alt="WiqayaT2D" width={144} height={78} priority className="h-9 w-auto object-contain" />
+    </span>
+  );
+}
 
 export default function TopNav() {
   const pathname = usePathname();
@@ -42,16 +51,28 @@ export default function TopNav() {
     router.refresh();
   }
 
+  // Public landing page — only ever reached signed out (app/page.tsx sends
+  // authenticated visitors straight to /onboarding), so it gets its own
+  // minimal header instead of the app-shell nav below.
+  if (pathname === "/") {
+    return (
+      <header className="sticky top-0 z-40 border-b border-border bg-card/90 backdrop-blur supports-backdrop-filter:bg-card/70">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
+          <Logo />
+          <div className="flex items-center gap-2 shrink-0">
+            <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/auth/login">Se connecter</Link>} />
+            <Button size="sm" nativeButton={false} render={<Link href="/auth/login">Commencer</Link>} />
+          </div>
+        </div>
+      </header>
+    );
+  }
+
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-card/90 backdrop-blur supports-backdrop-filter:bg-card/70">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-4 px-4">
-        <Link href="/onboarding" className="flex items-center gap-2 shrink-0">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-hero-gradient text-white">
-            <Activity className="size-4" strokeWidth={2} />
-          </span>
-          <span className="text-sm font-heading font-bold text-primary">
-            DIABSCORE
-          </span>
+        <Link href="/onboarding" className="shrink-0">
+          <Logo />
         </Link>
 
         <nav className="hidden md:flex items-center gap-1">
@@ -94,7 +115,7 @@ export default function TopNav() {
           </Button>
           <SheetContent side="left" className="w-72">
             <SheetHeader>
-              <SheetTitle>DIABSCORE</SheetTitle>
+              <SheetTitle>WiqayaT2D</SheetTitle>
             </SheetHeader>
             <nav className="flex flex-col gap-1 px-4">
               {NAV_LINKS.map((link) => {

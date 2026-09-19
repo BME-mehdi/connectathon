@@ -224,9 +224,11 @@ adult fills intake  →  POST /api/screening        (Next.js: validate + insert)
                     lab attaches a result → status: results_ready
                     (result_tier + result_summary on the referrals row)
                               │
-                    nightly job refreshes aggregate_outcomes (materialized view) —
-                    kept up to date for when a payer-facing consumer returns;
-                    nothing in the app reads it today (§12)
+                    aggregate_outcomes (materialized view) refreshed inline,
+                    best-effort, at the end of every /api/screening call
+                              │
+                    /payer reads it — authenticated as the payer_readonly
+                    Postgres role via a custom access token hook (§4, §12)
 ```
 
 ---
@@ -247,12 +249,12 @@ shape without duplicating it.
 | **Screening & scoring** | `app/(screening)/`, `app/api/screening`, `app/api/scoring-webhook`, `lib/scoring/`, `lib/validation/screening.ts` | The DIABSCORE questionnaire, non-diagnostic result display, per-member evaluation history, and — since scoring is now computed inline — the auto lab-referral that follows a high-risk score | **Deterministic, versioned scoring** — never an LLM |
 | **Referral & scheduling** | `app/(referral)/`, `app/api/referral/*`, `lib/referral/`, `components/referral/`, `n8n-workflows/referral-workflow.json` (optional), `n8n-workflows/reminder-workflow.json` (optional) | Lab assignment, appointment scheduling/reschedule, lab attendance marking, lab result entry | `results_ready` is lab-only, never automated |
 | **Companion** | `app/api/companion/`, `components/companion/`, `COMPANION_API_CONTRACT.md` | The chat button/panel + the local Ollama/medgemma call and its system prompt (§8) | Never receives individual scores or clinical data |
+| **Payer dashboard** | `app/(payer)/`, `supabase/migrations/007_payer_access.sql`, `scripts/grant-payer-role.mjs` | The `payer` role grant, the custom access token hook that maps it to `payer_readonly` at login, and the one page that reads `aggregate_outcomes` under that role | The data firewall — a payer session cannot execute a query as `authenticated`, so it structurally cannot reach any individual-data table |
 | **Shared foundation** | `lib/supabase/`, `lib/validation/`, `lib/household.ts`, `components/ui/`, `supabase/migrations/` | Auth clients, household resolution (owner-or-member), Zod schemas used by 2+ modules, shadcn primitives, schema + RLS | Both non-negotiables are ultimately enforced here |
 
-> The CNAM/insurer payer dashboard (`app/(dashboard-payer)/`) has been removed
-> from the frontend for now — see §12. The data-firewall database objects
-> (`payer_readonly` role, `aggregate_outcomes` view) remain in place for when
-> it returns.
+> The CNAM/insurer payer dashboard is deliberately minimal —
+> `app/(payer)/payer/page.tsx` is an unstyled proof that the firewall holds
+> end to end, not a product surface. See §4 and §12.
 
 The rule of thumb: a module's **page + API route** can be rewritten freely; a
 module's **Zod schema and DB migration** are contracts other modules read, so
@@ -337,7 +339,8 @@ supabase/
     ├── 003_data_firewall.sql           # payer_readonly role: GRANT view, REVOKE tables
     ├── 004_seed_pharmacies.sql         # Demo partner labs (one per governorate)
     ├── 005_household_membership_access.sql  # Owner-or-member household access; family_members.email
-    └── 006_medical_labs_referral_flow.sql   # pharmacy→lab rename; new referral status flow + RLS
+    ├── 006_medical_labs_referral_flow.sql   # pharmacy→lab rename; new referral status flow + RLS
+    └── 007_payer_access.sql            # payer_readonly login path: custom access token hook (§4)
 
 n8n-workflows/                          # Optional reference automation — not depended on by the
 │                                        # app (§1); field names kept in sync with the schema
@@ -346,13 +349,19 @@ n8n-workflows/                          # Optional reference automation — not 
 └── reminder-workflow.json              # Daily cron: upcoming/overdue notifications (stub)
 
 scripts/
-└── grant-lab-role.mjs                  # Grants/revokes the lab role (app_metadata) by email —
-                                         # deliberately not self-service, see §5.2
+├── grant-lab-role.mjs                  # Grants/revokes the lab role (app_metadata) by email —
+│                                        # deliberately not self-service, see §5.2
+└── grant-payer-role.mjs                # Same pattern, for the payer role (§4)
+
+app/(payer)/
+└── payer/page.tsx                      # Unstyled proof-of-firewall page — reads aggregate_outcomes
+                                         # authenticated as payer_readonly (§4)
 
 messages/                               # i18n scaffolding (next-intl not yet wired to routing —
 │                                        # see §12)
 ├── fr.json                             # The language the demo ships in
-└── ar.json                             # Skeleton — RTL is already on at the shadcn/Tailwind level
+└── ar.json                             # Full draft translation (§12) — RTL is already on at the
+                                         # shadcn/Tailwind level
 
 COMPANION_API_CONTRACT.md               # Request/response contract for the external team
 .env.example                            # All required env vars, documented
@@ -378,20 +387,54 @@ pharmacy→lab rename and new referral status columns land in
 | `referrals` | State machine: `request_sent → analyzing → results_ready`, with `no_show → request_sent` as the reschedule loop (§5.2). Also carries `lab_id`, `result_tier`, `result_summary`, `results_entered_at` | Household-scoped read/limited update; lab-scoped read/update |
 | `appointments` | Booked slot (`scheduled_at`) + `attended_at` (set when the lab confirms the visit happened) | Household-scoped (read always; update only while `request_sent`) + lab RLS |
 | `audit_log` | Append-only action trail (consent grants, referral transitions, reschedules) | Insert-only |
-| `aggregate_outcomes` | Materialized view: region × month → cohort size, % high-risk, % referral completed, % confirmed prediabetes. **Zero individual identifiers.** Kept up to date; no payer-facing page reads it today (§12) | `payer_readonly` role only |
+| `aggregate_outcomes` | Materialized view: region × month → cohort size, % high-risk, % referral completed, % confirmed prediabetes. **Zero individual identifiers.** Refreshed inline at the end of every `/api/screening` call | `payer_readonly` role only |
 
 ### The firewall, concretely
 
 `supabase/migrations/003_data_firewall.sql` creates a dedicated `payer_readonly`
 Postgres role: `GRANT SELECT` on `aggregate_outcomes` only, `REVOKE ALL` on
-every individual table. This is meant to be a second, independent layer under
+every individual table. This is a second, independent layer under
 the RLS policies in `002_rls_policies.sql`/`006_medical_labs_referral_flow.sql`
-— so that even a bug in a future payer-facing dashboard, or a missed RLS
-policy somewhere, still can't leak an individual record, because the *role*
-itself has no grant to leak. There is currently no page that authenticates as
-`payer_readonly` — the payer dashboard was removed from the frontend (§12) —
-so treat this as infrastructure held ready for when that surface returns,
-not something to verify against a running page today.
+— so that even a bug in the payer dashboard, or a missed RLS policy somewhere,
+still can't leak an individual record, because the *role* itself has no grant
+to leak.
+
+`supabase/migrations/007_payer_access.sql` is what makes that role reachable
+by an actual session rather than just a fact about grants nobody's session
+ever uses: a Supabase Custom Access Token Auth Hook rewrites the JWT's
+top-level `role` claim to `payer_readonly` for any account whose
+`app_metadata.role = 'payer'` (granted via `scripts/grant-payer-role.mjs`,
+same non-self-service pattern as the lab role in §5.2). PostgREST then
+executes every one of that session's queries as `payer_readonly`, not
+`authenticated` — so `app/(payer)/payer/page.tsx`, which only ever queries
+`aggregate_outcomes`, isn't the thing enforcing the boundary. Pointing that
+same query at `households`, `risk_scores`, or any other individual table
+from a payer session fails with a Postgres permission error, not an empty
+result — that's the difference between "hidden" and "structurally
+impossible," and it's the one thing worth actually testing live: grant
+yourself the payer role, sign in, and try it.
+
+**One manual step this migration can't do for you**: the hook must be
+enabled in the Supabase Dashboard under Authentication → Hooks → Custom
+Access Token, pointed at `public.custom_access_token_hook`. Until that's
+flipped on, `/payer` will authenticate fine but read zero rows — the
+session still carries the default `authenticated` role, which has no grant
+on `aggregate_outcomes` either.
+
+### Legal basis for the wall
+
+Tunisian personal data processing is governed by **Loi organique n° 2004-63
+du 27 juillet 2004, relative à la protection des données à caractère
+personnel**, and supervised by the **INPDP** (Instance Nationale de
+Protection des Données Personnelles). Individual screening data qualifies as
+sensitive health data under that law, which is the underlying reason the
+architecture treats "payer never sees an individual record" as a database-role
+grant rather than a dashboard convention (§4 above) — the firewall is the
+technical expression of a contractual and legal separation between screening
+data and underwriting/pricing data, not just good practice. This project has
+not undergone a formal INPDP declaration/authorization review; that is a
+process step for the entity operating the product in production, not
+something a codebase can self-certify.
 
 ---
 
@@ -465,6 +508,13 @@ become lab staff — grant it with:
 node scripts/grant-lab-role.mjs someone@example.com
 ```
 
+This is a different use of the top-level `role` claim than the payer path in
+§4: there, a Custom Access Token Hook deliberately *rewrites* that claim to
+switch which Postgres role executes the query. Here, an RLS policy would be
+wrong to key on it because Supabase leaves it at `authenticated` for
+everyone by default — the hook is what makes rewriting it meaningful, not
+reading it as-is.
+
 ---
 
 ## 6. Consent — three types, never conflated
@@ -484,6 +534,11 @@ owner can send an invite, but only the invitee's own authenticated session can
 write their own `family_members` row and `self` consent (`app/api/invite/accept/route.ts`
 runs under the service role precisely because the owner's session has no RLS
 grant to insert a member on someone else's behalf).
+
+Legal basis: see "Legal basis for the wall" in §4 — the same law (Loi n°
+2004-63) that classifies screening answers as sensitive personal data is what
+makes an explicit, append-only, per-type consent record (rather than a single
+blanket checkbox) the right shape for this table.
 
 ---
 
@@ -564,7 +619,7 @@ cp .env.example .env.local        # then fill in values from `supabase start`,
                                    # (only needed if you'll call /api/scoring-webhook)
 
 npx supabase start                # boots local Postgres, Auth, Studio, etc.
-npx supabase migration up         # applies 001 → 006 in order
+npx supabase migration up         # applies 001 → 007 in order
 
 npm run dev                       # http://localhost:3000
 ```
@@ -584,6 +639,20 @@ node scripts/grant-lab-role.mjs someone@example.com
 
 They need to sign out and back in afterwards for the role to land in their
 session, then `/referral/lab` becomes reachable for that account.
+
+### Granting the payer role
+
+Same non-self-service pattern, for the CNAM/insurer side (§4):
+
+```bash
+node scripts/grant-payer-role.mjs someone@example.com
+```
+
+Also requires enabling the Custom Access Token Hook in the Supabase
+Dashboard once per project (Authentication → Hooks → Custom Access Token →
+`public.custom_access_token_hook`) — this can't be done from a migration.
+Until it's enabled, a payer account signs in fine but `/payer` reads zero
+rows, because their session still carries the default `authenticated` role.
 
 ### n8n (optional)
 
@@ -614,14 +683,27 @@ into the high tier).
 
 ### Manually verifying the data firewall
 
+At the database level, directly:
+
 ```sql
 SET ROLE payer_readonly;
 SELECT * FROM risk_scores;          -- must fail: permission denied
 SELECT * FROM aggregate_outcomes;   -- must succeed
 ```
-(See §4 — this proves the *database* is correctly locked down; there is
-currently no page that authenticates as this role, since the payer dashboard
-was removed from the frontend, §12.)
+
+End to end, through the app (this is the version worth doing live):
+
+```bash
+node scripts/grant-payer-role.mjs someone@example.com
+```
+
+then sign in as that account, enable the Custom Access Token Hook if you
+haven't (§4/§10), and open `/payer` — it should show aggregate rows. Then
+edit `app/(payer)/payer/page.tsx` to query `risk_scores` or `households`
+instead of `aggregate_outcomes` and reload: it fails with a Postgres
+permission error, not an empty page. That's the proof — the role has no
+grant to leak, so there's no query this page (or any bug in it) could ever
+run that would expose an individual record.
 
 ---
 
@@ -630,9 +712,13 @@ was removed from the frontend, §12.)
 Kept here deliberately so anyone picking up a module can see what's actually
 done versus what's demo-shaped:
 
-1. ~~Payer dashboard doesn't authenticate as `payer_readonly` yet.~~ Removed —
-   the CNAM/insurer dashboard has been dropped from the frontend for now; the
-   data-firewall database objects (§4) remain in place for when it returns.
+1. ~~Payer dashboard doesn't authenticate as `payer_readonly` yet.~~ Fixed —
+   `app/(payer)/payer/page.tsx` reads `aggregate_outcomes` under a session
+   whose JWT is rewritten to the `payer_readonly` role by a Custom Access
+   Token Hook (`007_payer_access.sql`). It's intentionally the thinnest
+   possible page (no styling, no filters) — the deliverable is proving the
+   firewall is real, not a payer-facing product. Still needs the hook
+   enabled once in the Supabase Dashboard (§4/§10) before it'll show data.
 2. ~~Pharmacist gating relies on self-editable `user_metadata`.~~ Fixed —
    the role now lives in `app_metadata` on both sides (§5.2).
 3. ~~Non-owner household members can't navigate the app.~~ Fixed —
@@ -647,8 +733,13 @@ done versus what's demo-shaped:
    rather than creating the first one.
 5. `swr`, `framer-motion`, and `next-intl` are installed but not yet wired in
    (no live polling for the async score — no longer needed, scoring is now
-   synchronous; no reveal animation; no locale switching — `messages/fr.json`
-   is kept current by hand, `messages/ar.json` is still a skeleton).
+   synchronous; no reveal animation; no locale switching — the UI's French
+   strings are still hardcoded in components rather than read from
+   `messages/fr.json`/`messages/ar.json`). `messages/ar.json` now has full
+   key-for-key coverage of `messages/fr.json` (previously ~1/3 translated),
+   but it's a machine-assisted draft pending a native/clinical review before
+   it's treated as production copy — and, like `fr.json`, it stays inert
+   until `next-intl` is actually wired in.
 6. ~~Companion was a stub.~~ Implemented — chat panel mounted globally,
    backed by a local Ollama/medgemma call (§8). It doesn't send
    `household_id`/`locale` the way the original stub contract sketched (there's

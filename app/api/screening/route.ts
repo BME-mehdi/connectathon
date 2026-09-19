@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { ScreeningSubmissionSchema } from "@/lib/validation/screening";
-import { computeDiabscore, FORMULA_VERSION } from "@/lib/scoring";
-import { nextBusinessSlot, getDemoConsultationSlot } from "@/lib/referral/scheduling";
+import { computeDiabscore, FORMULA_VERSION, type DiabscoreInputs } from "@/lib/scoring";
+import { nextBusinessSlot } from "@/lib/referral/scheduling";
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -54,7 +54,9 @@ export async function POST(req: NextRequest) {
     height_cm: response.height_cm,
     family_history_t2d: response.family_history_t2d,
     gestational_diabetes_history: response.gestational_diabetes_history,
-    activity_level: response.activity_level,
+    // DB-constrained to exactly these values (001_initial_schema.sql CHECK),
+    // but gen-types keeps CHECK-constrained TEXT columns as plain `string`.
+    activity_level: response.activity_level as DiabscoreInputs["activity_level"],
     diet_score: response.diet_score,
     bp_medication: response.bp_medication,
   });
@@ -79,7 +81,6 @@ export async function POST(req: NextRequest) {
     // For demo purposes: find "Laboratoire d'Analyses médicales Farah Messai Mahjoub"
     let targetLabId: string | null = null;
 
-    // 1. Try to find Farah Messai Mahjoub in partner_labs or partner_pharmacies
     const { data: farahLab } = await admin
       .from("partner_labs")
       .select("id")
@@ -89,19 +90,8 @@ export async function POST(req: NextRequest) {
     if (farahLab) {
       targetLabId = farahLab.id;
     } else {
-      const { data: farahPharm } = await admin
-        .from("partner_pharmacies")
-        .select("id")
-        .ilike("name", "%Farah Messai Mahjoub%")
-        .maybeSingle();
-      if (farahPharm) {
-        targetLabId = farahPharm.id;
-      }
-    }
-
-    // 2. Fallback to regional lab if not found
-    if (!targetLabId) {
-      const region = (member as any).households?.region as string | undefined;
+      // Fallback: nearest active partner lab in the household's region
+      const region = member.households?.region;
       if (region) {
         const { data: regLab } = await admin
           .from("partner_labs")
@@ -110,28 +100,11 @@ export async function POST(req: NextRequest) {
           .eq("is_active", true)
           .limit(1)
           .maybeSingle();
-        if (regLab) {
-          targetLabId = regLab.id;
-        } else {
-          const { data: regPharm } = await admin
-            .from("partner_pharmacies")
-            .select("id")
-            .eq("region", region)
-            .eq("is_active", true)
-            .limit(1)
-            .maybeSingle();
-          if (regPharm) {
-            targetLabId = regPharm.id;
-          }
-        }
+        if (regLab) targetLabId = regLab.id;
       }
     }
 
-    // Insert referral (supporting both migration 006 lab_id and original pharmacy_id)
-    let referral: any = null;
-    let referralErr: any = null;
-
-    const res1 = await admin
+    const { data: referral, error: referralErr } = await admin
       .from("referrals")
       .insert({
         family_member_id: response.family_member_id,
@@ -142,44 +115,28 @@ export async function POST(req: NextRequest) {
       .select("id")
       .single();
 
-    if (!res1.error && res1.data) {
-      referral = res1.data;
-    } else {
-      const res2 = await admin
-        .from("referrals")
-        .insert({
-          family_member_id: response.family_member_id,
-          risk_score_id: score.id,
-          pharmacy_id: targetLabId,
-          status: "scheduled",
-        })
-        .select("id")
-        .single();
-      referral = res2.data;
-      referralErr = res2.error;
-    }
+    if (!referralErr && referral) {
+      referralId = referral.id;
 
-    if (!referralErr && referral && targetLabId) {
-      // Demo requirement: Friday at 13h00
-      const scheduledAt = getDemoConsultationSlot().toISOString();
-
-      const appt1 = await admin.from("appointments").insert({
-        referral_id: referral.id,
-        lab_id: targetLabId,
-        scheduled_at: scheduledAt,
-      });
-
-      if (appt1.error) {
+      if (targetLabId) {
+        // Default slot: next business day at 09:00. The household can reschedule
+        // from the referral page while the referral is still 'request_sent'.
         await admin.from("appointments").insert({
           referral_id: referral.id,
-          pharmacy_id: targetLabId,
-          scheduled_at: scheduledAt,
+          lab_id: targetLabId,
+          scheduled_at: nextBusinessSlot().toISOString(),
         });
       }
-      referralId = referral.id;
-    } else if (!referralErr && referral) {
-      referralId = referral.id;
     }
+  }
+
+  // Best-effort — the payer dashboard (app/(payer)/payer) reads this
+  // materialized view, and nothing else refreshes it on a schedule yet.
+  // Never let a refresh failure fail the screening submission itself.
+  try {
+    await admin.rpc("refresh_aggregate_outcomes");
+  } catch (err) {
+    console.error("[screening] aggregate_outcomes refresh failed:", err);
   }
 
   return NextResponse.json({

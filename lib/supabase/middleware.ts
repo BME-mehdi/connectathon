@@ -48,8 +48,11 @@ export async function updateSession(request: NextRequest) {
       request.nextUrl.pathname.startsWith("/_next") ||
       request.nextUrl.pathname.startsWith("/favicon") ||
       request.nextUrl.pathname.match(/\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$/);
+    // Public marketing landing page — exact match only, so nothing under it
+    // (e.g. a future "/onboarding" typo) is accidentally exempted.
+    const isPublicLanding = request.nextUrl.pathname === "/";
 
-    if (!user && !isAuthRoute && !isApiRoute && !isPublicAsset) {
+    if (!user && !isAuthRoute && !isApiRoute && !isPublicAsset && !isPublicLanding) {
       const url = request.nextUrl.clone();
       url.pathname = "/auth/login";
       const redirectResponse = NextResponse.redirect(url);

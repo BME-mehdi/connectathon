@@ -176,13 +176,17 @@ ALTER TABLE appointments       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_log          ENABLE ROW LEVEL SECURITY;
 
 -- Helper: resolve current user's household_id
-CREATE OR REPLACE FUNCTION auth.user_household_id()
+-- Helper: resolve current user's household_id
+CREATE OR REPLACE FUNCTION public.user_household_id()
 RETURNS UUID LANGUAGE SQL SECURITY DEFINER STABLE AS $$
   SELECT id FROM households WHERE owner_user_id = auth.uid()
   UNION
   SELECT household_id FROM family_members WHERE user_id = auth.uid()
   LIMIT 1;
 $$;
+
+-- Grant execution permissions
+GRANT EXECUTE ON FUNCTION public.user_household_id() TO authenticated, service_role;
 
 -- ── HOUSEHOLDS ────────────────────────────────────────────────────────────────
 CREATE POLICY "households_select" ON households FOR SELECT
@@ -194,7 +198,7 @@ CREATE POLICY "households_update" ON households FOR UPDATE
 
 -- ── FAMILY MEMBERS ────────────────────────────────────────────────────────────
 CREATE POLICY "family_members_select" ON family_members FOR SELECT
-  USING (household_id = auth.user_household_id());
+  USING (household_id = public.user_household_id());
 CREATE POLICY "family_members_insert" ON family_members FOR INSERT
   WITH CHECK (household_id IN (SELECT id FROM households WHERE owner_user_id = auth.uid()));
 CREATE POLICY "family_members_update" ON family_members FOR UPDATE
@@ -203,34 +207,34 @@ CREATE POLICY "family_members_update" ON family_members FOR UPDATE
 -- ── CONSENTS — INSERT only; no UPDATE/DELETE ──────────────────────────────────
 CREATE POLICY "consents_select" ON consents FOR SELECT
   USING (family_member_id IN (
-    SELECT id FROM family_members WHERE household_id = auth.user_household_id()
+    SELECT id FROM family_members WHERE household_id = public.user_household_id()
   ));
 CREATE POLICY "consents_insert" ON consents FOR INSERT
   WITH CHECK (family_member_id IN (
-    SELECT id FROM family_members WHERE household_id = auth.user_household_id()
+    SELECT id FROM family_members WHERE household_id = public.user_household_id()
   ));
 -- Intentionally NO update or delete policies — consent is append-only
 
 -- ── SCREENING RESPONSES ───────────────────────────────────────────────────────
 CREATE POLICY "screening_select" ON screening_responses FOR SELECT
   USING (family_member_id IN (
-    SELECT id FROM family_members WHERE household_id = auth.user_household_id()
+    SELECT id FROM family_members WHERE household_id = public.user_household_id()
   ));
 CREATE POLICY "screening_insert" ON screening_responses FOR INSERT
   WITH CHECK (family_member_id IN (
-    SELECT id FROM family_members WHERE household_id = auth.user_household_id()
+    SELECT id FROM family_members WHERE household_id = public.user_household_id()
   ));
 
 -- ── RISK SCORES — household read; n8n writes via service role ─────────────────
 CREATE POLICY "risk_scores_select" ON risk_scores FOR SELECT
   USING (family_member_id IN (
-    SELECT id FROM family_members WHERE household_id = auth.user_household_id()
+    SELECT id FROM family_members WHERE household_id = public.user_household_id()
   ));
 
 -- ── REFERRALS ─────────────────────────────────────────────────────────────────
 CREATE POLICY "referrals_select_household" ON referrals FOR SELECT
   USING (family_member_id IN (
-    SELECT id FROM family_members WHERE household_id = auth.user_household_id()
+    SELECT id FROM family_members WHERE household_id = public.user_household_id()
   ));
 CREATE POLICY "referrals_select_pharmacist" ON referrals FOR SELECT
   USING (auth.jwt() ->> 'role' = 'pharmacist');
@@ -244,13 +248,13 @@ CREATE POLICY "appointments_select_household" ON appointments FOR SELECT
   USING (referral_id IN (
     SELECT r.id FROM referrals r
     JOIN family_members fm ON fm.id = r.family_member_id
-    WHERE fm.household_id = auth.user_household_id()
+    WHERE fm.household_id = public.user_household_id()
   ));
 CREATE POLICY "appointments_insert_household" ON appointments FOR INSERT
   WITH CHECK (referral_id IN (
     SELECT r.id FROM referrals r
     JOIN family_members fm ON fm.id = r.family_member_id
-    WHERE fm.household_id = auth.user_household_id()
+    WHERE fm.household_id = public.user_household_id()
   ));
 CREATE POLICY "appointments_pharmacist" ON appointments FOR ALL
   USING (auth.jwt() ->> 'role' = 'pharmacist');
@@ -305,20 +309,20 @@ COMMENT ON ROLE payer_readonly IS
 -- SELECT * FROM aggregate_outcomes;  -- Must succeed
 -- ============================================================
 -- 004_seed_pharmacies.sql
--- Demo partner pharmacies — one per major Tunisian governorate
+-- Real partner medical laboratories — one per major Tunisian governorate
 -- ============================================================
 
 INSERT INTO partner_pharmacies (name, region, address, phone, is_active) VALUES
-  ('Pharmacie Ben Ali',             'Tunis',    '12 Avenue Habib Bourguiba, Tunis 1000',        '+216 71 000 001', TRUE),
-  ('Pharmacie Centrale Sousse',     'Sousse',   '45 Rue de France, Sousse 4000',                '+216 73 000 002', TRUE),
-  ('Pharmacie El Amal Sfax',        'Sfax',     '8 Avenue de la République, Sfax 3000',         '+216 74 000 003', TRUE),
-  ('Pharmacie Ibn Khaldoun',        'Kairouan', '3 Rue Okba, Kairouan 3100',                    '+216 77 000 004', TRUE),
-  ('Pharmacie du Peuple Gabès',     'Gabès',    '21 Avenue Farhat Hached, Gabès 6000',          '+216 75 000 005', TRUE),
-  ('Pharmacie Sidi Bou Said',       'Ariana',   '5 Route de la Marsa, Ariana 2080',             '+216 71 000 006', TRUE),
-  ('Pharmacie Nabeul Centre',       'Nabeul',   '67 Avenue Habib Thameur, Nabeul 8000',         '+216 72 000 007', TRUE),
-  ('Pharmacie de la Santé Bizerte', 'Bizerte',  '14 Rue du 20 Mars, Bizerte 7000',              '+216 72 000 008', TRUE),
-  ('Pharmacie Populaire Béja',      'Béja',     '2 Avenue de l''Indépendance, Béja 9000',       '+216 78 000 009', TRUE),
-  ('Pharmacie Centrale Monastir',   'Monastir', '33 Avenue de la Corniche, Monastir 5000',      '+216 73 000 010', TRUE);
+  ('Laboratoire d''Analyses Médicales Farah Messai Mahjoub', 'Tunis',    'Centre Médical Hannibal, Cité des Pins, 1er étage, Les Berges du Lac 2, 1053 Tunis', '+216 71 267 322', TRUE),
+  ('Laboratoire Riba Mahmoud',                               'Sousse',   'Immeuble Gloulou, 1er étage, Rue 22 Janvier 1952, Sousse 4000',                      '+216 73 227 878', TRUE),
+  ('Laboratoire d''Analyses Médicales Kamel Zribi',          'Sfax',     'Route de Tunis Km 3, Complexe Dar Ettabib, 1er étage, Sfax 3000',                    '+216 70 030 519', TRUE),
+  ('Laboratoire d''Analyses Médicales Fehmi Ben Moussa',     'Kairouan', 'Avenue Abi Zamâa El Balaoui, Galerie Errabi, 3100 Kairouan',                         '+216 77 227 292', TRUE),
+  ('Laboratoire d''Analyses Médicales Mohamed Becha',        'Gabès',    '154 Boulevard Mohamed Ali, 6000 Gabès',                                              '+216 75 265 814', TRUE),
+  ('Laboratoire Abir Belkhechine',                           'Ariana',   'Centre Médical Kamoun, Avenue de l''Ère Nouvelle, Ennasr 2, 2036 Ariana',            '+216 70 039 439', TRUE),
+  ('Laboratoire Dr Mohamed Sellem',                          'Nabeul',   'Immeuble Gannar, 3ème étage, 13 Avenue Habib Thameur, 8000 Nabeul',                  '+216 72 270 777', TRUE),
+  ('Centre d''Analyses Médicales Bio Dhaouadi',              'Bizerte',  '21 Avenue d''Algérie, 7000 Bizerte',                                                  '+216 72 430 648', TRUE),
+  ('Laboratoire d''Analyses Médicales Bechir Hmissi',        'Béja',     '56 Rue de la République, Immeuble Kandil, Béja Nord, 9000 Béja',                     '+216 78 440 900', TRUE),
+  ('Laboratoire BIO 24 Alliance',                            'Monastir', 'Centre Médical Ruspina, 1er étage, Avenue Combattant Suprême, 5000 Monastir',        '+216 73 462 717', TRUE);
 -- ============================================================
 -- 005_household_membership_access.sql
 --
@@ -331,7 +335,7 @@ INSERT INTO partner_pharmacies (name, region, address, phone, is_active) VALUES
 -- had just joined, and got redirected into creating a brand new,
 -- disconnected household instead.
 --
--- 002_rls_policies.sql already defines auth.user_household_id(), which
+-- 002_rls_policies.sql already defines public.user_household_id(), which
 -- correctly resolves BOTH the owner case and the member case — but
 -- "households_select", "family_members_insert" and "family_members_update"
 -- were never updated to use it. This migration fixes that, and adds a
@@ -342,7 +346,7 @@ INSERT INTO partner_pharmacies (name, region, address, phone, is_active) VALUES
 -- ── HOUSEHOLDS — any member (not just the owner) can read their own household
 DROP POLICY IF EXISTS "households_select" ON households;
 CREATE POLICY "households_select" ON households FOR SELECT
-  USING (owner_user_id = auth.uid() OR id = auth.user_household_id());
+  USING (owner_user_id = auth.uid() OR id = public.user_household_id());
 
 -- ── FAMILY MEMBERS — any adult already in the household can add/update
 -- members (e.g. a non-owner spouse registering their own children),
@@ -351,14 +355,14 @@ DROP POLICY IF EXISTS "family_members_insert" ON family_members;
 CREATE POLICY "family_members_insert" ON family_members FOR INSERT
   WITH CHECK (
     household_id IN (SELECT id FROM households WHERE owner_user_id = auth.uid())
-    OR household_id = auth.user_household_id()
+    OR household_id = public.user_household_id()
   );
 
 DROP POLICY IF EXISTS "family_members_update" ON family_members;
 CREATE POLICY "family_members_update" ON family_members FOR UPDATE
   USING (
     household_id IN (SELECT id FROM households WHERE owner_user_id = auth.uid())
-    OR household_id = auth.user_household_id()
+    OR household_id = public.user_household_id()
   );
 
 -- ── Contact email per family member — including minors, whose guardian
@@ -393,8 +397,6 @@ ALTER TABLE partner_pharmacies RENAME TO partner_labs;
 ALTER TABLE referrals    RENAME COLUMN pharmacy_id TO lab_id;
 ALTER TABLE appointments RENAME COLUMN pharmacy_id TO lab_id;
 ALTER TABLE appointments RENAME COLUMN confirmed_by_pharmacist_at TO attended_at;
-
-UPDATE partner_labs SET name = replace(name, 'Pharmacie', 'Laboratoire');
 
 -- ── 2. New referral status vocabulary ────────────────────────────────────────
 ALTER TABLE referrals DROP CONSTRAINT IF EXISTS referrals_status_check;
@@ -450,12 +452,12 @@ CREATE POLICY "referrals_update_lab" ON referrals FOR UPDATE
 -- results_ready, those are exclusively the lab's to set above.
 CREATE POLICY "referrals_update_household" ON referrals FOR UPDATE
   USING (family_member_id IN (
-    SELECT id FROM family_members WHERE household_id = auth.user_household_id()
+    SELECT id FROM family_members WHERE household_id = public.user_household_id()
   ))
   WITH CHECK (
     status = 'request_sent'
     AND family_member_id IN (
-      SELECT id FROM family_members WHERE household_id = auth.user_household_id()
+      SELECT id FROM family_members WHERE household_id = public.user_household_id()
     )
   );
 
@@ -470,12 +472,12 @@ CREATE POLICY "appointments_update_household" ON appointments FOR UPDATE
   USING (referral_id IN (
     SELECT r.id FROM referrals r
     JOIN family_members fm ON fm.id = r.family_member_id
-    WHERE fm.household_id = auth.user_household_id()
+    WHERE fm.household_id = public.user_household_id()
   ))
   WITH CHECK (referral_id IN (
     SELECT r.id FROM referrals r
     JOIN family_members fm ON fm.id = r.family_member_id
-    WHERE fm.household_id = auth.user_household_id() AND r.status = 'request_sent'
+    WHERE fm.household_id = public.user_household_id() AND r.status = 'request_sent'
   ));
 
 -- ── 4. aggregate_outcomes view referenced the old status values ─────────────
@@ -500,3 +502,66 @@ WITH DATA;
 
 CREATE UNIQUE INDEX idx_aggregate_outcomes_pk ON aggregate_outcomes(region, period);
 GRANT SELECT ON aggregate_outcomes TO payer_readonly;
+-- ============================================================
+-- 007_payer_access.sql
+--
+-- Wires the payer_readonly role (003_data_firewall.sql) into an actual
+-- login path. Until now nothing authenticated AS payer_readonly, so the
+-- firewall was real but unused — this migration is what lets a payer
+-- session's queries actually execute as that Postgres role, instead of
+-- the default 'authenticated' role every other signed-in user gets.
+--
+-- How it works: Supabase's Custom Access Token Auth Hook lets a Postgres
+-- function rewrite the JWT claims issued at login. For a user whose
+-- app_metadata.role = 'payer', this hook overwrites the token's
+-- top-level `role` claim to 'payer_readonly'. PostgREST reads that claim
+-- on every request and does `SET ROLE payer_readonly` before running the
+-- query — so a payer session literally cannot execute a query as
+-- 'authenticated', and therefore cannot reach any table that role isn't
+-- granted (i.e. every individual-data table; see 003_data_firewall.sql).
+-- This is enforced by Postgres role privileges, not application code.
+--
+-- ── MANUAL STEP REQUIRED (cannot be done from SQL) ───────────────────────
+-- In the Supabase Dashboard: Authentication → Hooks → Custom Access Token
+-- → select "public.custom_access_token_hook" and enable it. Without that
+-- one toggle, this migration has no effect: sessions keep the default
+-- 'authenticated' role, and /payer will read zero rows (payer_readonly is
+-- the only role granted SELECT on aggregate_outcomes).
+-- ============================================================
+
+-- PostgREST connects as `authenticator` and does `SET ROLE <jwt role>` per
+-- request — it can only switch into a role it has been made a member of.
+GRANT payer_readonly TO authenticator;
+
+CREATE OR REPLACE FUNCTION public.custom_access_token_hook(event jsonb)
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE
+AS $$
+DECLARE
+  claims  jsonb;
+  app_role text;
+BEGIN
+  SELECT raw_app_meta_data ->> 'role' INTO app_role
+  FROM auth.users
+  WHERE id = (event ->> 'user_id')::uuid;
+
+  claims := event -> 'claims';
+
+  -- Only 'payer' is ever remapped. 'lab' and every other account keep the
+  -- default 'authenticated' Postgres role, which is what every RLS policy
+  -- in 002/005/006 is written against and which has zero grants on
+  -- aggregate_outcomes — so this hook can only ever narrow what a session
+  -- can see, never widen it.
+  IF app_role = 'payer' THEN
+    claims := jsonb_set(claims, '{role}', '"payer_readonly"');
+  END IF;
+
+  RETURN jsonb_set(event, '{claims}', claims);
+END;
+$$;
+
+-- Only Supabase's auth service may ever invoke this — never a client session.
+GRANT USAGE ON SCHEMA public TO supabase_auth_admin;
+GRANT EXECUTE ON FUNCTION public.custom_access_token_hook TO supabase_auth_admin;
+REVOKE EXECUTE ON FUNCTION public.custom_access_token_hook FROM authenticated, anon, public;

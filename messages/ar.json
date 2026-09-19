@@ -1,21 +1,81 @@
 {
-  "_note": "Arabic translation keys — content to be completed by the clinical/localization team",
+  "_note": "Full draft translation, machine-assisted — mirrors messages/fr.json key-for-key. Needs a pass by a native/clinical reviewer before it's treated as production copy (medical terms in particular).",
   "auth": {
     "login": "تسجيل الدخول",
+    "login_description": "منصة الفحص العائلي لداء السكري من النوع الثاني",
     "email_label": "البريد الإلكتروني",
-    "send_link": "إرسال رابط الدخول"
+    "email_placeholder": "بريدك@مثال.com",
+    "send_link": "إرسال رابط الدخول",
+    "sending": "جارٍ الإرسال…",
+    "check_email": "تحقق من بريدك الإلكتروني",
+    "check_email_description": "تم إرسال رابط الدخول إلى"
+  },
+  "onboarding": {
+    "create_household": "إنشاء أسرتك",
+    "household_name": "اسم الأسرة",
+    "region": "الولاية",
+    "create": "إنشاء الأسرة",
+    "creating": "جارٍ الإنشاء…",
+    "members_title": "أفراد الأسرة",
+    "add_member": "+ إضافة فرد",
+    "invite_adult": "دعوة شخص بالغ",
+    "start_screening": "بدء الفحص ←",
+    "invite_title": "دعوة شخص بالغ",
+    "invite_description": "يؤكد كل بالغ بنفسه حسابه وموافقته قبل إدخال معلوماته الخاصة.",
+    "invite_send": "إرسال الدعوة",
+    "invite_sent_title": "تم إرسال الدعوة",
+    "accept_title": "الانضمام إلى الأسرة",
+    "accept_consent_notice": "بمتابعتك، فإنك توافق بنفسك على جمع بيانات فحصك الخاصة — هذه الموافقة لا يمنحها أي شخص آخر نيابة عنك.",
+    "accept_confirm": "تأكيد والانضمام",
+    "add_minor_title": "إضافة طفل قاصر",
+    "add_minor_description": "لا يتم جمع أي بيانات صحية شخصية عن القاصر — فقط هويته، لأغراض إعلامية للأسرة فقط.",
+    "add_minor_consent_notice": "بإضافتك طفلاً قاصراً، فإنك تؤكد أنك توليه شرعياً وتمنح موافقتك على إدراجه ضمن الأسرة.",
+    "add_minor_submit": "إضافة الطفل"
   },
   "screening": {
     "title": "استبيان DIABSCORE",
+    "subtitle": "أداة فحص معتمدة للسكان التونسيين",
+    "age": "العمر (بالسنوات)",
+    "waist": "محيط الخصر (سم)",
+    "height": "الطول (سم)",
+    "family_history": "سوابق عائلية لداء السكري من النوع الثاني؟",
+    "gdm": "سوابق سكري الحمل؟",
+    "gdm_women": "(للنساء)",
     "yes": "نعم",
     "no": "لا",
     "na": "غير منطبق",
-    "submit": "احسب نتيجتي ←"
+    "findrisc_title": "تقييم متعمق (اختياري)",
+    "findrisc_subtitle": "FINDRISC-lite — لنتيجة أكثر دقة",
+    "activity": "النشاط البدني",
+    "activity_high": "مرتفع",
+    "activity_moderate": "متوسط",
+    "activity_low": "منخفض",
+    "diet": "التغذية (1 = سيئة، 5 = ممتازة)",
+    "bp_medication": "علاج لارتفاع ضغط الدم؟",
+    "submit": "احسب نتيجتي ←",
+    "calculating": "جارٍ حساب النتيجة…"
   },
   "result": {
-    "disclaimer": "هذه النتيجة مؤشر للخطر وليست تشخيصاً طبياً. يجب على متخصص صحي وحده إجراء التشخيص.",
+    "disclaimer": "هذه النتيجة مؤشر للخطر وليست تشخيصاً طبياً. لا يمكن لغير المختص الصحي وضع تشخيص، ويستوجب ذلك إجراء الفحوصات السريرية المناسبة.",
     "low": "خطر منخفض",
     "moderate": "خطر معتدل",
-    "high": "خطر مرتفع"
+    "high": "خطر مرتفع",
+    "explanation_low": "تشير نتيجتك إلى خطر منخفض للإصابة بداء السكري من النوع الثاني غير المشخص. حافظ على عادات حياتية جيدة وأعد الفحص خلال 12 شهراً.",
+    "explanation_moderate": "تشير نتيجتك إلى خطر معتدل. يُنصح باستشارة مختص صحي للمتابعة واتخاذ تدابير وقائية.",
+    "explanation_high": "تشير نتيجتك إلى خطر مرتفع. نوجهك نحو فحص تأكيدي لدى مخبر طبي شريك.",
+    "see_appointment": "عرض طلبي ←",
+    "back": "← العودة إلى الأفراد",
+    "formula_version": "الصيغة"
+  },
+  "referral": {
+    "title": "توجيهاتي",
+    "subtitle": "متابعة فحوصات التأكيد لدى المخبر الطبي الشريك",
+    "no_referrals": "لا توجد توجيهات حالياً."
+  },
+  "companion": {
+    "title": "المساعد الصحي (تجريبي)",
+    "subtitle": "نصائح نمط الحياة · بدون تشخيص",
+    "placeholder": "سؤالك…",
+    "empty_state": "اطرح سؤالاً حول التغذية أو النشاط البدني أو إدارة التوتر."
   }
 }

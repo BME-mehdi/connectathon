@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { canTransition } from "@/lib/referral/stateMachine";
-import { ReferralUpdateSchema } from "@/lib/validation/screening";
+import { ReferralUpdateSchema, type ReferralStatus } from "@/lib/validation/screening";
+import type { TablesUpdate } from "@/lib/supabase/database.types";
 
 // PATCH /api/referral
 //
@@ -54,7 +55,9 @@ export async function PATCH(req: NextRequest) {
   }
 
   // Case 2: a real state transition
-  const check = canTransition(referral.status as any, parsed.data.status, actorRole);
+  // DB-constrained to exactly these values (001_initial_schema.sql CHECK),
+  // but gen-types keeps CHECK-constrained TEXT columns as plain `string`.
+  const check = canTransition(referral.status as ReferralStatus, parsed.data.status, actorRole);
   if (!check.allowed) {
     return NextResponse.json({ error: check.reason }, { status: 403 });
   }
@@ -63,7 +66,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "result_tier is required to mark results_ready." }, { status: 400 });
   }
 
-  const updatePayload: Record<string, unknown> = {
+  const updatePayload: TablesUpdate<"referrals"> = {
     status: parsed.data.status,
     updated_at: new Date().toISOString(),
   };

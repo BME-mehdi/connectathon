@@ -34,7 +34,7 @@ export default async function MembersPage() {
             </span>
           </div>
           <p className="text-muted-foreground text-sm">
-            Composition du foyer pour l'évaluation du risque familial de diabète.
+            Composition du foyer pour l&apos;évaluation du risque familial de diabète.
           </p>
 
           <ul className="divide-y divide-border">

@@ -18,8 +18,8 @@ const amaranth = Amaranth({
 });
 
 export const metadata: Metadata = {
-  title: "T2D Family Screening | Connectathon 2026",
-  description: "Family-based Type 2 Diabetes risk screening and referral platform",
+  title: "WiqayaT2D | Dépistage familial du diabète de type 2",
+  description: "Dépistage et protection complets contre le diabète de type 2, pour toute la famille.",
 };
 
 export default function RootLayout({

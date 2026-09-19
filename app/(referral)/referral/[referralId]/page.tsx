@@ -15,7 +15,7 @@ export default async function ReferralDetailPage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  let { data: referral } = await supabase
+  const { data: referral } = await supabase
     .from("referrals")
     .select(`
       id, status, created_at, result_tier, result_summary, results_entered_at,
@@ -27,34 +27,13 @@ export default async function ReferralDetailPage({ params }: Props) {
     .eq("id", referralId)
     .single();
 
-  if (!referral) {
-    const { data: fallbackReferral } = await supabase
-      .from("referrals")
-      .select(`
-        id, status, created_at, result_tier, result_summary, results_entered_at,
-        family_members(full_name),
-        partner_pharmacies(name, address, phone, region),
-        appointments(id, scheduled_at, attended_at),
-        risk_scores(score_value, tier, formula_version, computed_at)
-      `)
-      .eq("id", referralId)
-      .single();
-
-    if (fallbackReferral) {
-      referral = {
-        ...fallbackReferral,
-        partner_labs: (fallbackReferral as any).partner_pharmacies,
-      } as any;
-    }
-  }
-
   if (!referral) redirect("/referral");
 
   const status = STATUS_LABELS[referral.status] ?? { fr: referral.status, color: "bg-muted text-muted-foreground" };
-  const lab    = referral.partner_labs as any;
-  const member = referral.family_members as any;
-  const score  = referral.risk_scores as any;
-  const appointment = (referral.appointments as any[])?.[0];
+  const lab    = referral.partner_labs;
+  const member = referral.family_members;
+  const score  = referral.risk_scores;
+  const appointment = referral.appointments?.[0];
 
   // "no_show" is a detour off the main path, not a step on it
   const normalizedStatus = referral.status === "scheduled" || referral.status === "flagged" ? "request_sent" : referral.status;

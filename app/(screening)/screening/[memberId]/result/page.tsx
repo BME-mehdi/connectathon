@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { TIER_LABELS } from "@/lib/scoring";
 
 interface Props {
@@ -88,21 +89,21 @@ export default async function ResultPage({ params }: Props) {
             <p className="text-sm text-slate-500">
               Une demande de consultation dans un laboratoire médical partenaire de votre région a été envoyée.
             </p>
-            <a
+            <Link
               href="/referral"
               className="block text-center rounded-lg bg-slate-800 text-white py-2 text-sm font-medium hover:bg-slate-700 transition-colors"
             >
               Voir ma demande →
-            </a>
+            </Link>
           </div>
         )}
 
-        <a href={`/screening/${memberId}/history`} className="block text-center text-slate-500 text-sm underline">
+        <Link href={`/screening/${memberId}/history`} className="block text-center text-slate-500 text-sm underline">
           Voir l&apos;historique de ce membre
-        </a>
-        <a href="/screening" className="block text-center text-slate-500 text-sm underline">
+        </Link>
+        <Link href="/screening" className="block text-center text-slate-500 text-sm underline">
           ← Retour aux membres
-        </a>
+        </Link>
       </div>
     </div>
   );

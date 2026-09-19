@@ -8,7 +8,7 @@ export default async function ReferralPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  let { data: referrals } = await supabase
+  const { data: referrals } = await supabase
     .from("referrals")
     .select(`
       id, status, created_at,
@@ -17,25 +17,6 @@ export default async function ReferralPage() {
       appointments(id, scheduled_at)
     `)
     .order("created_at", { ascending: false });
-
-  if (!referrals) {
-    const { data: fallbackReferrals } = await supabase
-      .from("referrals")
-      .select(`
-        id, status, created_at,
-        family_members(full_name),
-        partner_pharmacies(name, address, region),
-        appointments(id, scheduled_at)
-      `)
-      .order("created_at", { ascending: false });
-
-    if (fallbackReferrals) {
-      referrals = fallbackReferrals.map((r: any) => ({
-        ...r,
-        partner_labs: r.partner_pharmacies,
-      }));
-    }
-  }
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -56,8 +37,8 @@ export default async function ReferralPage() {
                 <li key={r.id} className="bg-card rounded-xl border border-border p-4 space-y-2">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="font-medium text-foreground">{(r.family_members as any)?.full_name}</p>
-                      <p className="text-xs text-muted-foreground">{(r.partner_labs as any)?.name}</p>
+                      <p className="font-medium text-foreground">{r.family_members?.full_name}</p>
+                      <p className="text-xs text-muted-foreground">{r.partner_labs?.name}</p>
                     </div>
                     <span className={`text-xs font-medium px-2 py-1 rounded-full ${status.color}`}>
                       {status.fr}
@@ -77,7 +58,7 @@ export default async function ReferralPage() {
           </ul>
         ) : (
           <p className="text-center text-muted-foreground text-sm">
-            Aucune orientation pour l'instant.
+            Aucune orientation pour l&apos;instant.
           </p>
         )}
       </div>

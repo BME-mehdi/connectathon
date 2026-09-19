@@ -46,7 +46,7 @@ export default async function EvaluationHistoryPage({ params }: Props) {
         {scores && scores.length > 0 ? (
           <ul className="space-y-3">
             {scores.map(s => {
-              const referral = (s.referrals as any)?.[0] ?? s.referrals;
+              const referral = s.referrals?.[0] ?? s.referrals;
               const status = referral ? STATUS_LABELS[referral.status] : null;
               return (
                 <li key={s.id} className={`rounded-xl border p-4 space-y-2 ${TIER_BADGE[s.tier] ?? "bg-card border-border"}`}>

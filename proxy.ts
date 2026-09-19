@@ -1,11 +1,11 @@
 import { updateSession } from "@/lib/supabase/middleware";
 import { NextResponse, type NextRequest } from "next/server";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   try {
     return await updateSession(request);
   } catch (error) {
-    console.error("[middleware] Unhandled exception:", error);
+    console.error("[proxy] Unhandled exception:", error);
     return NextResponse.next({ request });
   }
 }

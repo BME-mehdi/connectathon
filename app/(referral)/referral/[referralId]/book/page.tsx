@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 
 // Simple slot picker — React Big Calendar integration can replace this grid
@@ -20,12 +20,10 @@ function generateSlots() {
   const slots: Date[] = [];
   let cursor = new Date();
   cursor.setHours(0, 0, 0, 0);
-  let daysAdded = 0;
 
   while (slots.length < 12) {
     cursor = addDays(cursor, 1);
     if (isWeekend(cursor)) continue;
-    daysAdded++;
     for (const hour of [9, 10, 11, 14, 15, 16]) {
       if (slots.length >= 12) break;
       const s = new Date(cursor);

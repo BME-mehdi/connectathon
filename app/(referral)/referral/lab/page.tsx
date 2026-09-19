@@ -5,10 +5,16 @@ import { AttendanceActions, ResultsForm } from "@/components/referral/LabActions
 // Lab-only view — everyone with the 'lab' role sees every pending referral
 // and appointment (see supabase/migrations/006_medical_labs_referral_flow.sql
 // for the RLS policies that gate this).
+//
+// The RLS policies are the real enforcement (a household account gets zero
+// rows back either way), but we still check the role here rather than let a
+// household member land on an empty "lab queue" page — same app_metadata.role
+// read as app/api/referral/route.ts (never user_metadata, see README §5.2).
 export default async function LabPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
+  if (user.app_metadata?.role !== "lab") redirect("/referral");
 
   const { data: pending } = await supabase
     .from("referrals")
@@ -53,11 +59,11 @@ export default async function LabPage() {
           {pending && pending.length > 0 ? (
             <ul className="space-y-3">
               {pending.map(r => {
-                const appointment = (r.appointments as any[])?.[0];
+                const appointment = r.appointments?.[0];
                 return (
                   <li key={r.id} className="bg-card rounded-xl border border-border p-4 space-y-3">
                     <div>
-                      <p className="font-medium text-foreground">{(r.family_members as any)?.full_name}</p>
+                      <p className="font-medium text-foreground">{r.family_members?.full_name}</p>
                       {appointment && (
                         <p className="text-xs text-muted-foreground">
                           {new Date(appointment.scheduled_at).toLocaleDateString("fr-FR", { dateStyle: "long" })}
@@ -84,7 +90,7 @@ export default async function LabPage() {
             <ul className="space-y-3">
               {analyzing.map(r => (
                 <li key={r.id} className="bg-card rounded-xl border border-border p-4 space-y-3">
-                  <p className="font-medium text-foreground">{(r.family_members as any)?.full_name}</p>
+                  <p className="font-medium text-foreground">{r.family_members?.full_name}</p>
                   <ResultsForm referralId={r.id} />
                 </li>
               ))}

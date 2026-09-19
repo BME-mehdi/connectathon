@@ -28,8 +28,6 @@ ALTER TABLE referrals    RENAME COLUMN pharmacy_id TO lab_id;
 ALTER TABLE appointments RENAME COLUMN pharmacy_id TO lab_id;
 ALTER TABLE appointments RENAME COLUMN confirmed_by_pharmacist_at TO attended_at;
 
-UPDATE partner_labs SET name = replace(name, 'Pharmacie', 'Laboratoire');
-
 -- ── 2. New referral status vocabulary ────────────────────────────────────────
 ALTER TABLE referrals DROP CONSTRAINT IF EXISTS referrals_status_check;
 ALTER TABLE referrals ALTER COLUMN status DROP DEFAULT;
@@ -84,12 +82,12 @@ CREATE POLICY "referrals_update_lab" ON referrals FOR UPDATE
 -- results_ready, those are exclusively the lab's to set above.
 CREATE POLICY "referrals_update_household" ON referrals FOR UPDATE
   USING (family_member_id IN (
-    SELECT id FROM family_members WHERE household_id = auth.user_household_id()
+    SELECT id FROM family_members WHERE household_id = public.user_household_id()
   ))
   WITH CHECK (
     status = 'request_sent'
     AND family_member_id IN (
-      SELECT id FROM family_members WHERE household_id = auth.user_household_id()
+      SELECT id FROM family_members WHERE household_id = public.user_household_id()
     )
   );
 
@@ -104,12 +102,12 @@ CREATE POLICY "appointments_update_household" ON appointments FOR UPDATE
   USING (referral_id IN (
     SELECT r.id FROM referrals r
     JOIN family_members fm ON fm.id = r.family_member_id
-    WHERE fm.household_id = auth.user_household_id()
+    WHERE fm.household_id = public.user_household_id()
   ))
   WITH CHECK (referral_id IN (
     SELECT r.id FROM referrals r
     JOIN family_members fm ON fm.id = r.family_member_id
-    WHERE fm.household_id = auth.user_household_id() AND r.status = 'request_sent'
+    WHERE fm.household_id = public.user_household_id() AND r.status = 'request_sent'
   ));
 
 -- ── 4. aggregate_outcomes view referenced the old status values ─────────────

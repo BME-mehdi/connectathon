@@ -1,16 +1,16 @@
 -- ============================================================
 -- 004_seed_pharmacies.sql
--- Demo partner pharmacies — one per major Tunisian governorate
+-- Real partner medical laboratories — one per major Tunisian governorate
 -- ============================================================
 
 INSERT INTO partner_pharmacies (name, region, address, phone, is_active) VALUES
-  ('Pharmacie Ben Ali',             'Tunis',    '12 Avenue Habib Bourguiba, Tunis 1000',        '+216 71 000 001', TRUE),
-  ('Pharmacie Centrale Sousse',     'Sousse',   '45 Rue de France, Sousse 4000',                '+216 73 000 002', TRUE),
-  ('Pharmacie El Amal Sfax',        'Sfax',     '8 Avenue de la République, Sfax 3000',         '+216 74 000 003', TRUE),
-  ('Pharmacie Ibn Khaldoun',        'Kairouan', '3 Rue Okba, Kairouan 3100',                    '+216 77 000 004', TRUE),
-  ('Pharmacie du Peuple Gabès',     'Gabès',    '21 Avenue Farhat Hached, Gabès 6000',          '+216 75 000 005', TRUE),
-  ('Pharmacie Sidi Bou Said',       'Ariana',   '5 Route de la Marsa, Ariana 2080',             '+216 71 000 006', TRUE),
-  ('Pharmacie Nabeul Centre',       'Nabeul',   '67 Avenue Habib Thameur, Nabeul 8000',         '+216 72 000 007', TRUE),
-  ('Pharmacie de la Santé Bizerte', 'Bizerte',  '14 Rue du 20 Mars, Bizerte 7000',              '+216 72 000 008', TRUE),
-  ('Pharmacie Populaire Béja',      'Béja',     '2 Avenue de l''Indépendance, Béja 9000',       '+216 78 000 009', TRUE),
-  ('Pharmacie Centrale Monastir',   'Monastir', '33 Avenue de la Corniche, Monastir 5000',      '+216 73 000 010', TRUE);
+  ('Laboratoire d''Analyses Médicales Farah Messai Mahjoub', 'Tunis',    'Centre Médical Hannibal, Cité des Pins, 1er étage, Les Berges du Lac 2, 1053 Tunis', '+216 71 267 322', TRUE),
+  ('Laboratoire Riba Mahmoud',                               'Sousse',   'Immeuble Gloulou, 1er étage, Rue 22 Janvier 1952, Sousse 4000',                      '+216 73 227 878', TRUE),
+  ('Laboratoire d''Analyses Médicales Kamel Zribi',          'Sfax',     'Route de Tunis Km 3, Complexe Dar Ettabib, 1er étage, Sfax 3000',                    '+216 70 030 519', TRUE),
+  ('Laboratoire d''Analyses Médicales Fehmi Ben Moussa',     'Kairouan', 'Avenue Abi Zamâa El Balaoui, Galerie Errabi, 3100 Kairouan',                         '+216 77 227 292', TRUE),
+  ('Laboratoire d''Analyses Médicales Mohamed Becha',        'Gabès',    '154 Boulevard Mohamed Ali, 6000 Gabès',                                              '+216 75 265 814', TRUE),
+  ('Laboratoire Abir Belkhechine',                           'Ariana',   'Centre Médical Kamoun, Avenue de l''Ère Nouvelle, Ennasr 2, 2036 Ariana',            '+216 70 039 439', TRUE),
+  ('Laboratoire Dr Mohamed Sellem',                          'Nabeul',   'Immeuble Gannar, 3ème étage, 13 Avenue Habib Thameur, 8000 Nabeul',                  '+216 72 270 777', TRUE),
+  ('Centre d''Analyses Médicales Bio Dhaouadi',              'Bizerte',  '21 Avenue d''Algérie, 7000 Bizerte',                                                  '+216 72 430 648', TRUE),
+  ('Laboratoire d''Analyses Médicales Bechir Hmissi',        'Béja',     '56 Rue de la République, Immeuble Kandil, Béja Nord, 9000 Béja',                     '+216 78 440 900', TRUE),
+  ('Laboratoire BIO 24 Alliance',                            'Monastir', 'Centre Médical Ruspina, 1er étage, Avenue Combattant Suprême, 5000 Monastir',        '+216 73 462 717', TRUE);

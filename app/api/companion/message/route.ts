@@ -234,7 +234,7 @@ export async function POST(req: NextRequest) {
 
     // If Ollama responded with empty or unusable reply, serve WHO lifestyle guidance
     return NextResponse.json({ reply: getWhoLifestyleAdvice(message) });
-  } catch (err) {
+  } catch {
     // Graceful fallback: when Ollama is offline or running on Vercel without a tunnel,
     // serve WHO lifestyle advice rather than breaking the chat experience.
     console.warn("[companion] Ollama unavailable, serving WHO lifestyle advisory fallback.");
